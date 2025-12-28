@@ -3,17 +3,23 @@ package exec
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"syscall"
+
+	"github.com/aayushkdev/crate/internal/fs"
 )
 
 func InitContainer(args []string) {
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	Fatal(syscall.Sethostname([]byte("crate")))
 
-	if err := cmd.Run(); err != nil {
-		fmt.Println("ERROR", err)
+	Fatal(fs.Setup("rootfs/alpinefs"))
+
+	Fatal(syscall.Exec(args[0], args, os.Environ()))
+
+}
+
+func Fatal(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "crate: init exec failed", err)
 		os.Exit(1)
 	}
 }
