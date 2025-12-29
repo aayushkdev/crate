@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"os"
 	"syscall"
 )
 
@@ -10,15 +9,11 @@ func Setup(rootfs string) error {
 		return err
 	}
 
-	if err := PivotRoot(rootfs); err != nil {
+	if err := setupRootfs(rootfs); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll("/proc", 0555); err != nil {
-		return err
-	}
-
-	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
+	if err := mountProc(); err != nil {
 		return err
 	}
 
