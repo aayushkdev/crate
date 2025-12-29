@@ -6,11 +6,15 @@ import (
 )
 
 func Setup(rootfs string) error {
-	if err := syscall.Chroot(rootfs); err != nil {
+	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
 		return err
 	}
 
-	if err := os.Chdir("/"); err != nil {
+	if err := PivotRoot(rootfs); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll("/proc", 0555); err != nil {
 		return err
 	}
 

@@ -10,9 +10,6 @@ import (
 )
 
 func InitContainer(args []string) {
-
-	Fatal(syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""))
-
 	Fatal(syscall.Sethostname([]byte("crate")))
 
 	Fatal(fs.Setup("rootfs/alpinefs"))
