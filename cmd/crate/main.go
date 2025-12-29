@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/aayushkdev/crate/internal/cli"
-	"github.com/aayushkdev/crate/internal/exec"
+	"github.com/aayushkdev/crate/internal/container"
 )
 
 func main() {
 	if len(os.Args) > 2 && os.Args[1] == "init" {
-		exec.InitContainer(os.Args[2:])
+		container.InitContainer(os.Args[2:])
 		return
 	}
 

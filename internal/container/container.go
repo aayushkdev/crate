@@ -1,4 +1,4 @@
-package exec
+package container
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ func InitContainer(args []string) {
 	Fatal(fs.Setup("rootfs/alpinefs"))
 
 	Fatal(syscall.Exec(args[0], args, os.Environ()))
+	fmt.Println("topg container")
 
 }
 
