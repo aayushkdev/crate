@@ -14,7 +14,7 @@ func Setup(rootfs string) error {
 		return err
 	}
 
-	if err := syscall.Mount("proc", "proc", "proc", 0, ""); err != nil {
+	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
 		return err
 	}
 

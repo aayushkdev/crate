@@ -12,6 +12,7 @@ func LaunchContainer(args []string) error {
 		append([]string{"init"}, args...)...,
 	)
 
+	//TODO: use rootless container (CLONE_NEWUSER)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 		Unshareflags: syscall.CLONE_NEWNS,
