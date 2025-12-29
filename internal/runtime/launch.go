@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
@@ -23,7 +22,7 @@ func LaunchContainer(args []string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to launch container: %w", err)
+		return err
 	}
 
 	return nil
