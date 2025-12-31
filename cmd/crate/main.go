@@ -11,7 +11,10 @@ import (
 func main() {
 	if len(os.Args) > 2 && os.Args[1] == "init" {
 		// TODO: Use spec instead of manual parsing
-		container.InitContainer(os.Args[2], os.Args[3:])
+		root := os.Args[2] == "1"
+		image := os.Args[3]
+		command := os.Args[4:]
+		container.InitContainer(root, image, command)
 		return
 	}
 

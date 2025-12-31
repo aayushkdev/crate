@@ -1,15 +1,8 @@
 package fs
 
-import (
-	"syscall"
-)
+func Setup(rootfs string, root bool) error {
 
-func Setup(rootfs string) error {
-	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		return err
-	}
-
-	if err := setupRootfs(rootfs); err != nil {
+	if err := setupRootfs(rootfs, root); err != nil {
 		return err
 	}
 

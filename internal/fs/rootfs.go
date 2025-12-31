@@ -6,11 +6,27 @@ import (
 	"syscall"
 )
 
-func setupRootfs(rootfs string) error {
+func setupRootfs(rootfs string, root bool) error {
+	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
+		return err
+	}
 	if err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return err
 	}
+	if root {
+		if err := setupPivotRoot(rootfs); err != nil {
+			return err
+		}
+	} else {
+		if err := setupChroot(rootfs); err != nil {
+			return err
+		}
+	}
 
+	return os.Chdir("/")
+}
+
+func setupPivotRoot(rootfs string) error {
 	putold := filepath.Join(rootfs, ".oldroot")
 	if err := os.MkdirAll(putold, 0700); err != nil {
 		return err
@@ -20,17 +36,13 @@ func setupRootfs(rootfs string) error {
 		return err
 	}
 
-	if err := syscall.Chdir("/"); err != nil {
-		return err
-	}
-
 	if err := syscall.Unmount("/.oldroot", syscall.MNT_DETACH); err != nil {
 		return err
 	}
 
-	if err := os.RemoveAll("/.oldroot"); err != nil {
-		return err
-	}
+	return os.RemoveAll("/.oldroot")
+}
 
-	return nil
+func setupChroot(rootfs string) error {
+	return syscall.Chroot(rootfs)
 }

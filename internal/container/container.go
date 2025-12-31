@@ -9,10 +9,10 @@ import (
 	"github.com/aayushkdev/crate/internal/fs"
 )
 
-func InitContainer(image string, command []string) {
+func InitContainer(root bool, image string, command []string) {
 	Fatal(syscall.Sethostname([]byte("crate")))
 
-	Fatal(fs.Setup(image))
+	Fatal(fs.Setup(image, root))
 
 	cmd := exec.Command(command[0], command[1:]...)
 	cmd.Stdin = os.Stdin
