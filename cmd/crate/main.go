@@ -10,7 +10,8 @@ import (
 
 func main() {
 	if len(os.Args) > 2 && os.Args[1] == "init" {
-		container.InitContainer(os.Args[2:])
+		// TODO: Use spec instead of manual parsing
+		container.InitContainer(os.Args[2], os.Args[3:])
 		return
 	}
 

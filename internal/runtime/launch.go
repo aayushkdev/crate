@@ -6,10 +6,10 @@ import (
 	"syscall"
 )
 
-func LaunchContainer(args []string) error {
+func LaunchContainer(image string, command []string) error {
 	cmd := exec.Command(
 		"/proc/self/exe",
-		append([]string{"init"}, args...)...,
+		append([]string{"init", image}, command...)...,
 	)
 
 	//TODO: Support both rootless and rootful containers
