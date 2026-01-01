@@ -36,6 +36,10 @@ func Pull(input string) error {
 		}
 	}
 
+	if err := writeImageMetadata(imgRef, img); err != nil {
+		return err
+	}
+
 	fmt.Println("Pull complete")
 	return nil
 }
