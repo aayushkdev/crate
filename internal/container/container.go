@@ -14,16 +14,8 @@ func InitContainer(root bool, image string, command []string) {
 
 	Fatal(fs.Setup(image, root))
 
-	cmd := exec.Command(command[0], command[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	Fatal(cmd.Start())
-
-	Fatal(cmd.Wait())
-
-	os.Exit(0)
+	//TODO: maybe use something like tini for zombie reaping
+	Fatal(syscall.Exec(command[0], command, os.Environ()))
 
 }
 
