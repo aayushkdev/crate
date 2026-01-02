@@ -9,14 +9,14 @@ func Pull(input string) error {
 		return err
 	}
 
-	exists := imageExists(imgRef)
+	exists := MetadataExists(imgRef)
 
 	if exists {
 		fmt.Println("Image already present")
 		return nil
 	}
 
-	fmt.Printf("Pulling %s/%s:%s\n", imgRef.Registry, imgRef.Repo, imgRef.Tag)
+	fmt.Printf("Pulling %s from %s\n", imgRef.Tag, imgRef.Repo)
 
 	fmt.Println("Resolving manifest")
 	manifestData, contentType, err := fetchManifestByTag(imgRef)
@@ -36,14 +36,14 @@ func Pull(input string) error {
 	}
 
 	for i, layer := range img.Layers {
-		fmt.Printf("Layer %d - %s \n", i+1, img.Layers[i])
+		fmt.Printf("Layer %d - %s \n", i+1, img.Layers[i][7:16])
 
 		if err := downloadBlob(imgRef, layer); err != nil {
 			return err
 		}
 	}
 
-	if err := writeImageMetadata(imgRef, img); err != nil {
+	if err := WriteMetadata(imgRef, img); err != nil {
 		return err
 	}
 

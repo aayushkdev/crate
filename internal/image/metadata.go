@@ -24,13 +24,13 @@ func imageMetaPath(ref *Reference) (string, error) {
 	return filepath.Join(root, "images", fileName), nil
 }
 
-func imageExists(ref *Reference) bool {
+func MetadataExists(ref *Reference) bool {
 	path, err := imageMetaPath(ref)
 	_, err = os.Stat(path)
 	return err == nil
 }
 
-func writeImageMetadata(ref *Reference, img *ImageManifest) error {
+func WriteMetadata(ref *Reference, img *ImageManifest) error {
 	path, err := imageMetaPath(ref)
 	if err != nil {
 		return err
@@ -57,4 +57,24 @@ func writeImageMetadata(ref *Reference, img *ImageManifest) error {
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")
 	return enc.Encode(meta)
+}
+
+func ReadMetadata(ref *Reference) (*ImageMetadata, error) {
+	path, err := imageMetaPath(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var meta ImageMetadata
+	if err := json.NewDecoder(f).Decode(&meta); err != nil {
+		return nil, err
+	}
+
+	return &meta, nil
 }
