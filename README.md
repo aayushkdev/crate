@@ -23,3 +23,7 @@ sudo go run ./cmd/crate run rootfs/ubuntufs /bin/bash
 - Filesystem
     - Root isolation using pivot_root
     - /proc mounted
+- Image
+    - image name parsing
+    - Pulling from registries
+    - Local image store

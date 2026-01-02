@@ -24,6 +24,12 @@ func imageMetaPath(ref *Reference) (string, error) {
 	return filepath.Join(root, "images", fileName), nil
 }
 
+func imageExists(ref *Reference) bool {
+	path, err := imageMetaPath(ref)
+	_, err = os.Stat(path)
+	return err == nil
+}
+
 func writeImageMetadata(ref *Reference, img *ImageManifest) error {
 	path, err := imageMetaPath(ref)
 	if err != nil {

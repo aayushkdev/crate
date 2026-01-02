@@ -9,6 +9,13 @@ func Pull(input string) error {
 		return err
 	}
 
+	exists := imageExists(imgRef)
+
+	if exists {
+		fmt.Println("Image already present")
+		return nil
+	}
+
 	fmt.Printf("Pulling %s/%s:%s\n", imgRef.Registry, imgRef.Repo, imgRef.Tag)
 
 	fmt.Println("Resolving manifest")
