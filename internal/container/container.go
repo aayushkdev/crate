@@ -21,10 +21,12 @@ func InitContainer(containerID string, command []string) {
 	if len(command) == 0 {
 		command = cfg.Cmd
 	}
+	env := cfg.Env
 
-	// Replace PID 1 with user process
+	execPath, err := resolvePath(command[0], env)
+	Fatal(err)
 
-	Fatal(syscall.Exec(command[0], command, cfg.Env))
+	Fatal(syscall.Exec(execPath, command, env))
 }
 
 func Fatal(err error) {
