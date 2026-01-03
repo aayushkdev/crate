@@ -9,7 +9,7 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run [OPTIONS] IMAGE [COMMAND] [ARG...]",
 	Short: "Run a command in a container",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		image := args[0]
 		command := args[1:]

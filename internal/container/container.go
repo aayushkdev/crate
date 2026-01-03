@@ -18,8 +18,13 @@ func InitContainer(containerID string, command []string) {
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
 
+	if len(command) == 0 {
+		command = cfg.Cmd
+	}
+
 	// Replace PID 1 with user process
-	Fatal(syscall.Exec(command[0], command, os.Environ()))
+
+	Fatal(syscall.Exec(command[0], command, cfg.Env))
 }
 
 func Fatal(err error) {
