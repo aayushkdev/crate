@@ -9,14 +9,17 @@ import (
 	"github.com/aayushkdev/crate/internal/fs"
 )
 
-func InitContainer(root bool, image string, command []string) {
+func InitContainer(containerID string, command []string) {
+	cfg, err := ReadConfig(containerID)
+	Fatal(err)
+	rootfs := rootfsDir(containerID)
+
 	Fatal(syscall.Sethostname([]byte("crate")))
 
-	Fatal(fs.Setup(image, root))
+	Fatal(fs.Setup(rootfs, cfg.Rootless))
 
-	//TODO: maybe use something like tini for zombie reaping
+	// Replace PID 1 with user process
 	Fatal(syscall.Exec(command[0], command, os.Environ()))
-
 }
 
 func Fatal(err error) {

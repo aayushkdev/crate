@@ -14,7 +14,7 @@ var runCmd = &cobra.Command{
 		image := args[0]
 		command := args[1:]
 
-		return runtime.LaunchContainer(image, command)
+		return runtime.Run(image, command)
 	},
 }
 

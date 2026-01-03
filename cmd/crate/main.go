@@ -9,12 +9,11 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 2 && os.Args[1] == "init" {
-		// TODO: Use spec instead of manual parsing
-		root := os.Args[2] == "1"
-		image := os.Args[3]
-		command := os.Args[4:]
-		container.InitContainer(root, image, command)
+	if len(os.Args) >= 3 && os.Args[1] == "init" {
+		containerID := os.Args[2]
+		command := os.Args[3:]
+
+		container.InitContainer(containerID, command)
 		return
 	}
 

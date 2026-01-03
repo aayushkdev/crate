@@ -6,19 +6,19 @@ import (
 	"syscall"
 )
 
-func setupRootfs(rootfs string, root bool) error {
+func setupRootfs(rootfs string, rootless bool) error {
 	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
 		return err
 	}
 	if err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return err
 	}
-	if root {
-		if err := setupPivotRoot(rootfs); err != nil {
+	if rootless {
+		if err := setupChroot(rootfs); err != nil {
 			return err
 		}
 	} else {
-		if err := setupChroot(rootfs); err != nil {
+		if err := setupPivotRoot(rootfs); err != nil {
 			return err
 		}
 	}

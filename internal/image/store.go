@@ -5,21 +5,29 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
 
-func crateRoot() string {
-	base := os.Getenv("XDG_DATA_HOME")
-	if base == "" {
-		home, _ := os.UserHomeDir()
-		base = filepath.Join(home, ".local", "share")
+func CrateRoot() string {
+	var home string
+	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+		u, err := user.Lookup(sudoUser)
+		if err == nil {
+			home = u.HomeDir
+		}
 	}
-	return filepath.Join(base, "crate")
+	if home == "" {
+		h, _ := os.UserHomeDir()
+		home = h
+	}
+
+	return filepath.Join(home, ".local", "share", "crate")
 }
 
-func blobPath(digest string) (string, error) {
-	root := crateRoot()
+func BlobPath(digest string) (string, error) {
+	root := CrateRoot()
 	parts := strings.SplitN(digest, ":", 2)
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid digest: %s", digest)
@@ -30,7 +38,7 @@ func blobPath(digest string) (string, error) {
 }
 
 func blobExists(digest string) (bool, error) {
-	path, err := blobPath(digest)
+	path, err := BlobPath(digest)
 	if err != nil {
 		return false, err
 	}
@@ -81,7 +89,7 @@ func downloadBlob(ref *Reference, digest string) error {
 		return fmt.Errorf("blob download failed: %s", resp.Status)
 	}
 
-	path, err := blobPath(digest)
+	path, err := BlobPath(digest)
 	if err != nil {
 		return err
 	}

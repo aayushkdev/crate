@@ -19,7 +19,7 @@ type ImageMetadata struct {
 func imageMetaPath(ref *Reference) (string, error) {
 	repo := strings.ReplaceAll(ref.Repo, "/", "_")
 	fileName := repo + "-" + ref.Tag + ".json"
-	root := crateRoot()
+	root := CrateRoot()
 
 	return filepath.Join(root, "images", fileName), nil
 }
