@@ -9,11 +9,12 @@ import (
 )
 
 type Config struct {
-	ID       string   `json:"id"`
-	Image    string   `json:"image"`
-	Rootless bool     `json:"rootless"`
-	Cmd      []string `json:"cmd,omitempty"`
-	Env      []string `json:"env,omitempty"`
+	ID         string   `json:"id"`
+	Image      string   `json:"image"`
+	Rootless   bool     `json:"rootless"`
+	Cmd        []string `json:"cmd,omitempty"`
+	Env        []string `json:"env,omitempty"`
+	EntryPoint []string `json:"entrypoint,omitempty"`
 }
 
 func writeConfig(id string, meta *image.ImageMetadata) error {
@@ -25,11 +26,12 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 		return err
 	}
 	cfg := Config{
-		ID:       id,
-		Image:    meta.Repo + ":" + meta.Tag,
-		Rootless: os.Geteuid() != 0,
-		Cmd:      imgCfg.Config.Cmd,
-		Env:      imgCfg.Config.Env,
+		ID:         id,
+		Image:      meta.Repo + ":" + meta.Tag,
+		Rootless:   os.Geteuid() != 0,
+		Cmd:        imgCfg.Config.Cmd,
+		Env:        imgCfg.Config.Env,
+		EntryPoint: imgCfg.Config.Entrypoint,
 	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {

@@ -23,10 +23,13 @@ func InitContainer(containerID string, command []string) {
 	}
 	env := cfg.Env
 
-	execPath, err := resolvePath(command[0], env)
+	cmd, err := ResolveEntrypoint(cfg, command)
 	Fatal(err)
 
-	Fatal(syscall.Exec(execPath, command, env))
+	execPath, err := resolvePath(cmd[0], env)
+	Fatal(err)
+
+	Fatal(syscall.Exec(execPath, cmd, env))
 }
 
 func Fatal(err error) {
