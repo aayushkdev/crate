@@ -1,14 +1,25 @@
 package fs
 
-func Setup(rootfs string, root bool) error {
+func Setup(rootfs string, rootless bool) error {
 
-	if err := setupRootfs(rootfs, root); err != nil {
+	hostFDs, err := OpenHostDevFDs(rootless)
+	if err != nil {
+		return err
+	}
+
+	if err := setupRootfs(rootfs, rootless); err != nil {
 		return err
 	}
 
 	if err := mountProc(); err != nil {
 		return err
 	}
+
+	if err := mountDev(rootless, hostFDs); err != nil {
+		return err
+	}
+
+	CloseHostFDs(hostFDs)
 
 	return nil
 }
