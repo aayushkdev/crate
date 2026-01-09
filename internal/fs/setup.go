@@ -15,7 +15,15 @@ func Setup(rootfs string, rootless bool) error {
 		return err
 	}
 
+	if err := mountSys(rootless); err != nil {
+		return err
+	}
+
 	if err := mountDev(rootless, hostFDs); err != nil {
+		return err
+	}
+
+	if err := mountRun(); err != nil {
 		return err
 	}
 
