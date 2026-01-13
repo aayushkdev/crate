@@ -77,7 +77,9 @@ go run ./cmd/crate run alpine /bin/sh -c "echo hello world"
 
 * Root filesystem setup using `pivot_root` (or `chroot` in rootless mode)
 * `/proc` mounted inside the container
-* Image layers applied into a container rootfs
+* `/dev` mounted as `tmpfs` with minimal devices (`null`, `zero`, `random`, `urandom`, `full`, `shm`, `pts`, `ptmx`) 
+* `/run` mounted as `tmpfs`
+* `/sys` mounted read-only in rootful mode
 
 ### Image handling
 
