@@ -1,9 +1,23 @@
 # crate
 
 Crate is a small container runtime written in Go, built to explore containers work internally.
-It supports both rootless (without sudo) and rootful (with sudo) execution, with rootful mode being the main focus.
+It supports both rootless (without sudo) and rootful (with sudo) execution, with rootless mode being the main focus.
 
 ---
+
+## Getting started
+
+Install using (Go 1.20+ recommended):
+```bash
+go install github.com/aayushkdev/crate/cmd/crate@latest
+```
+(ensure `GOBIN` is in path)
+
+Verify installation:
+```bash
+crate --help
+```
+
 
 ## Usage
 
@@ -12,7 +26,7 @@ It supports both rootless (without sudo) and rootful (with sudo) execution, with
 Pulls an image from a registry and stores it in the local image store.
 
 ```bash
-go run ./cmd/crate pull alpine
+crate pull alpine
 ```
 If the image already exists locally, the pull is skipped.
 
@@ -23,7 +37,7 @@ If the image already exists locally, the pull is skipped.
 Creates a container from an image and prints the container ID.
 
 ```bash
-go run ./cmd/crate create alpine
+crate create alpine
 ```
 
 ---
@@ -33,17 +47,17 @@ go run ./cmd/crate create alpine
 Starts an existing container by ID.
 
 ```bash
-go run ./cmd/crate start <CONTAINER_ID> [COMMAND] [ARG...]
+crate start <CONTAINER_ID> [COMMAND] [ARG...]
 ```
 
 Examples:
 
 ```bash
-go run ./cmd/crate start c144672a8e04
+crate start c144672a8e04
 ```
 
 ```bash
-go run ./cmd/crate start c144672a8e04 ls -l /
+crate start c144672a8e04 ls -l /
 ```
 
 If no command is provided, the image’s default `CMD` is used.
@@ -55,14 +69,13 @@ If no command is provided, the image’s default `CMD` is used.
 `run` is a convenience command that creates a new container and immediately starts it.
 
 ```bash
-go run ./cmd/crate run alpine
+crate run alpine
 ```
 
 ```bash
-go run ./cmd/crate run alpine /bin/sh -c "echo hello world"  
+crate run alpine /bin/sh -c "echo hello world"  
 ```
 
----
 
 ## Implemented Concepts
 
@@ -93,9 +106,8 @@ go run ./cmd/crate run alpine /bin/sh -c "echo hello world"
 
 * PID 1 replaced with the container process using `execve`
 * Proper PATH-based command resolution (no shell)
-* CMD and environment variables used from image config
+* CMD, Entrypoint and environment variables used from image config
 
----
 
 ## Far off goals (for now)
 
