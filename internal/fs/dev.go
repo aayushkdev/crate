@@ -43,7 +43,7 @@ func mountDev(rootless bool, hostFDs map[string]*os.File) error {
 				dst,
 				"",
 				syscall.MS_BIND|syscall.MS_REMOUNT|
-					syscall.MS_NOSUID|syscall.MS_NODEV|syscall.MS_NOEXEC,
+					syscall.MS_NOSUID|syscall.MS_NOEXEC,
 				"",
 			)
 		}
@@ -85,7 +85,7 @@ func mountDev(rootless bool, hostFDs map[string]*os.File) error {
 }
 
 func mknodChar(path string, major, minor int, perm uint32) {
-	dev := int((major << 8) | minor)
+	dev := int((major << 20) | minor)
 	mode := uint32(syscall.S_IFCHR | perm)
 
 	syscall.Mknod(path, mode, dev)
