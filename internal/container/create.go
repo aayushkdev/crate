@@ -3,6 +3,7 @@ package container
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -30,6 +31,13 @@ func Create(imageName string) (string, error) {
 	ref, err := image.ParseReference(imageName)
 	if err != nil {
 		return "", err
+	}
+
+	if !image.MetadataExists(ref) {
+		fmt.Printf("Unable to find image '%s:%s' locally\n", ref.Repo, ref.Tag)
+		if err := image.Pull(imageName); err != nil {
+			return "", err
+		}
 	}
 
 	meta, err := image.ReadMetadata(ref)
