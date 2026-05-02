@@ -10,11 +10,18 @@ import (
 
 func Logs(containerID string, follow bool, stdout io.Writer) error {
 	logPath := container.LogPath(containerID)
+	state, err := container.RefreshState(containerID)
+	if err != nil {
+		return err
+	}
 
 	var offset int64
 	for {
 		next, err := printLogs(logPath, offset, stdout)
 		if err != nil {
+			if os.IsNotExist(err) && !follow {
+				return nil
+			}
 			return err
 		}
 		offset = next
@@ -23,7 +30,7 @@ func Logs(containerID string, follow bool, stdout io.Writer) error {
 			return nil
 		}
 
-		state, err := container.RefreshState(containerID)
+		state, err = container.RefreshState(containerID)
 		if err != nil {
 			return err
 		}

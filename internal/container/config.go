@@ -61,7 +61,7 @@ func ReadConfig(id string) (*Config, error) {
 	path := filepath.Join(containerDir(id), "config.json")
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, wrapNotFound(id, err)
 	}
 	defer f.Close()
 

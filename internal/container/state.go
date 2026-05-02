@@ -81,7 +81,7 @@ func ReadState(id string) (*State, error) {
 	path := statePath(id)
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, wrapNotFound(id, err)
 	}
 	defer f.Close()
 

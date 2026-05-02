@@ -17,6 +17,10 @@ func containerDir(id string) string {
 	return filepath.Join(image.CrateRoot(), "containers", id)
 }
 
+func removeContainerDir(id string) error {
+	return os.RemoveAll(containerDir(id))
+}
+
 func rootfsDir(id string) string {
 	return filepath.Join(containerDir(id), "rootfs")
 }

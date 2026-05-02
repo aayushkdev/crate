@@ -1,5 +1,31 @@
 package image
 
+import (
+	"fmt"
+	"os"
+)
+
+func Remove(input string) error {
+	ref, err := ParseReference(input)
+	if err != nil {
+		return err
+	}
+
+	meta, err := ReadMetadata(ref)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("image %s not found", input)
+		}
+		return err
+	}
+
+	if !hasRepoTag(meta, repoTag(ref)) {
+		return fmt.Errorf("image %s not found", input)
+	}
+
+	return RemoveRepoTag(ref, meta.ManifestDigest)
+}
+
 func pruneImageBlobs(target *ImageMetadata, metas []*ImageMetadata) error {
 	if !blobReferencedByOtherMetadata(target.ConfigDigest, target.ManifestDigest, metas) {
 		if err := deleteBlobByDigest(target.ConfigDigest); err != nil {
