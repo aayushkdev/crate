@@ -48,12 +48,24 @@ func mountDev(rootless bool, hostFDs map[string]*os.File) error {
 			)
 		}
 	} else {
-		mknodChar("/dev/null", 1, 3, 0666)
-		mknodChar("/dev/zero", 1, 5, 0666)
-		mknodChar("/dev/random", 1, 8, 0666)
-		mknodChar("/dev/urandom", 1, 9, 0666)
-		mknodChar("/dev/full", 1, 7, 0666)
-		mknodChar("/dev/tty", 5, 0, 0666)
+		if err := mknodChar("/dev/null", 1, 3, 0666); err != nil {
+			return err
+		}
+		if err := mknodChar("/dev/zero", 1, 5, 0666); err != nil {
+			return err
+		}
+		if err := mknodChar("/dev/random", 1, 8, 0666); err != nil {
+			return err
+		}
+		if err := mknodChar("/dev/urandom", 1, 9, 0666); err != nil {
+			return err
+		}
+		if err := mknodChar("/dev/full", 1, 7, 0666); err != nil {
+			return err
+		}
+		if err := mknodChar("/dev/tty", 5, 0, 0666); err != nil {
+			return err
+		}
 	}
 
 	os.MkdirAll("/dev/shm", 1777)
@@ -84,9 +96,16 @@ func mountDev(rootless bool, hostFDs map[string]*os.File) error {
 	return os.Symlink("pts/ptmx", "/dev/ptmx")
 }
 
-func mknodChar(path string, major, minor int, perm uint32) {
-	dev := int((major << 20) | minor)
+func mknodChar(path string, major, minor uint32, perm uint32) error {
+	dev := linuxDeviceNumber(major, minor)
 	mode := uint32(syscall.S_IFCHR | perm)
 
-	syscall.Mknod(path, mode, dev)
+	return syscall.Mknod(path, mode, int(dev))
+}
+
+func linuxDeviceNumber(major, minor uint32) uint64 {
+	return ((uint64(major) & 0xfffff000) << 32) |
+		((uint64(major) & 0x00000fff) << 8) |
+		((uint64(minor) & 0xffffff00) << 12) |
+		(uint64(minor) & 0x000000ff)
 }
