@@ -6,8 +6,16 @@ import (
 )
 
 type ImageManifest struct {
-	Config string
-	Layers []string
+	ManifestDigest string
+	ConfigDigest   string
+	Layers         []LayerDescriptor
+	OS             string
+	Architecture   string
+}
+
+type LayerDescriptor struct {
+	Digest string
+	Size   int64
 }
 
 type ociIndex struct {
@@ -28,10 +36,11 @@ type SingleManifest struct {
 
 	Layers []struct {
 		Digest string `json:"digest"`
+		Size   int64  `json:"size"`
 	} `json:"layers"`
 }
 
-func resolveManifest(ref *Reference, data []byte, contentType string) (*ImageManifest, error) {
+func resolveManifest(ref *Reference, data []byte, contentType string, digest string) (*ImageManifest, error) {
 	switch contentType {
 
 	case "application/vnd.oci.image.index.v1+json",
@@ -45,11 +54,17 @@ func resolveManifest(ref *Reference, data []byte, contentType string) (*ImageMan
 		for _, m := range idx.Manifests {
 			// Only supporting linux and x64 for now
 			if m.Platform.OS == "linux" && m.Platform.Architecture == "amd64" {
-				raw, ct, err := fetchManifestByDigest(ref, m.Digest)
+				raw, ct, manifestDigest, err := fetchManifestByDigest(ref, m.Digest)
 				if err != nil {
 					return nil, err
 				}
-				return resolveManifest(ref, raw, ct)
+				img, err := resolveManifest(ref, raw, ct, manifestDigest)
+				if err != nil {
+					return nil, err
+				}
+				img.OS = m.Platform.OS
+				img.Architecture = m.Platform.Architecture
+				return img, nil
 			}
 		}
 
@@ -63,14 +78,18 @@ func resolveManifest(ref *Reference, data []byte, contentType string) (*ImageMan
 			return nil, err
 		}
 
-		layers := make([]string, 0, len(sm.Layers))
+		layers := make([]LayerDescriptor, 0, len(sm.Layers))
 		for _, l := range sm.Layers {
-			layers = append(layers, l.Digest)
+			layers = append(layers, LayerDescriptor{
+				Digest: l.Digest,
+				Size:   l.Size,
+			})
 		}
 
 		return &ImageManifest{
-			Config: sm.Config.Digest,
-			Layers: layers,
+			ManifestDigest: digest,
+			ConfigDigest:   sm.Config.Digest,
+			Layers:         layers,
 		}, nil
 
 	default:

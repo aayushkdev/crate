@@ -47,14 +47,14 @@ func fetchDockerHubToken(repo string) (string, error) {
 	return tr.Token, nil
 }
 
-func fetchManifest(ref *Reference, name string) ([]byte, string, error) {
+func fetchManifest(ref *Reference, name string) ([]byte, string, string, error) {
 	if ref.Registry != "docker.io" {
-		return nil, "", fmt.Errorf("only docker.io supported")
+		return nil, "", "", fmt.Errorf("only docker.io supported")
 	}
 
 	token, err := fetchDockerHubToken(ref.Repo)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	req, err := http.NewRequest(
@@ -63,7 +63,7 @@ func fetchManifest(ref *Reference, name string) ([]byte, string, error) {
 		nil,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	req.Header.Set("Accept", manifestAccept)
@@ -71,26 +71,26 @@ func fetchManifest(ref *Reference, name string) ([]byte, string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("manifest fetch failed: %s", resp.Status)
+		return nil, "", "", fmt.Errorf("manifest fetch failed: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
-	return body, resp.Header.Get("Content-Type"), nil
+	return body, resp.Header.Get("Content-Type"), resp.Header.Get("Docker-Content-Digest"), nil
 }
 
-func fetchManifestByTag(ref *Reference) ([]byte, string, error) {
+func fetchManifestByTag(ref *Reference) ([]byte, string, string, error) {
 	return fetchManifest(ref, ref.Tag)
 }
 
-func fetchManifestByDigest(ref *Reference, digest string) ([]byte, string, error) {
+func fetchManifestByDigest(ref *Reference, digest string) ([]byte, string, string, error) {
 	return fetchManifest(ref, digest)
 }

@@ -46,3 +46,11 @@ func ParseReference(input string) (*Reference, error) {
 	ref.Repo = repo
 	return ref, nil
 }
+
+func familiarRepo(repo string) string {
+	if strings.HasPrefix(repo, "library/") && !strings.Contains(strings.TrimPrefix(repo, "library/"), "/") {
+		return strings.TrimPrefix(repo, "library/")
+	}
+
+	return repo
+}

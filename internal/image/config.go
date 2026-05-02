@@ -6,6 +6,8 @@ import (
 )
 
 type ImageConfig struct {
+	Architecture string `json:"architecture"`
+	OS           string `json:"os"`
 	Config struct {
 		Cmd        []string `json:"Cmd"`
 		Env        []string `json:"Env"`

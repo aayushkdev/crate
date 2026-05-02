@@ -21,13 +21,13 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 	dir := containerDir(id)
 	path := filepath.Join(dir, "config.json")
 
-	imgCfg, err := image.ReadImageConfig(meta.Config)
+	imgCfg, err := image.ReadImageConfig(meta.ConfigDigest)
 	if err != nil {
 		return err
 	}
 	cfg := Config{
 		ID:         id,
-		Image:      meta.Repo + ":" + meta.Tag,
+		Image:      primaryRepoTag(meta),
 		Rootless:   os.Geteuid() != 0,
 		Cmd:        imgCfg.Config.Cmd,
 		Env:        imgCfg.Config.Env,
@@ -47,6 +47,14 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")
 	return enc.Encode(cfg)
+}
+
+func primaryRepoTag(meta *image.ImageMetadata) string {
+	if len(meta.RepoTags) > 0 {
+		return meta.RepoTags[0]
+	}
+
+	return meta.Repo
 }
 
 func ReadConfig(id string) (*Config, error) {

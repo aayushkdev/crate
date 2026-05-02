@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aayushkdev/crate/internal/fs"
@@ -69,7 +70,7 @@ func Create(imageName string) (string, error) {
 
 	if err := writeState(id, &State{
 		ID:        id,
-		Image:     meta.Repo + ":" + meta.Tag,
+		Image:     familiarRef(ref),
 		Status:    StatusCreated,
 		LogPath:   LogPath(id),
 		CreatedAt: time.Now().UTC(),
@@ -78,4 +79,16 @@ func Create(imageName string) (string, error) {
 	}
 
 	return id, nil
+}
+
+func familiarRef(ref *image.Reference) string {
+	return imageName(ref.Repo, ref.Tag)
+}
+
+func imageName(repo, tag string) string {
+	if strings.HasPrefix(repo, "library/") && !strings.Contains(strings.TrimPrefix(repo, "library/"), "/") {
+		repo = strings.TrimPrefix(repo, "library/")
+	}
+
+	return repo + ":" + tag
 }
