@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"errors"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,18 +50,22 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 			syscall.CLONE_NEWNS
 	}
 
-	if attach {
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = io.MultiWriter(os.Stdout, logFile)
-		cmd.Stderr = io.MultiWriter(os.Stderr, logFile)
-	} else {
+	if !attach {
 		cmd.SysProcAttr.Setpgid = true
 		cmd.Stdout = logFile
 		cmd.Stderr = logFile
 	}
 
-	if err := cmd.Start(); err != nil {
-		return err
+	var ptmx *os.File
+	if attach {
+		ptmx, err = startAttached(cmd)
+		if err != nil {
+			return err
+		}
+	} else {
+		if err := cmd.Start(); err != nil {
+			return err
+		}
 	}
 
 	state := &container.State{
@@ -84,6 +87,14 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 
 	if !wait {
 		return nil
+	}
+
+	if attach {
+		if err := relayAttached(ptmx, logFile); err != nil {
+			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
+			_ = cmd.Process.Kill()
+			return err
+		}
 	}
 
 	waitErr := cmd.Wait()
