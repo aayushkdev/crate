@@ -53,7 +53,7 @@ mount -t proc proc /proc
 
 ## How Crate Uses It
 
-Rootfs switching starts in [`internal/fs/rootfs.go`](/home/aayush/projects/crate/internal/fs/rootfs.go):
+Rootfs switching starts in [`internal/fs/rootfs.go`](../internal/fs/rootfs.go):
 
 ```go
 // internal/fs/rootfs.go
@@ -110,7 +110,7 @@ if err := mountRun(); err != nil {
 }
 ```
 
-The `/dev` setup is worth reading carefully because rootless and rootful paths differ materially in [`internal/fs/dev.go`](/home/aayush/projects/crate/internal/fs/dev.go).
+The `/dev` setup is worth reading carefully because rootless and rootful paths differ materially in [`internal/fs/dev.go`](../internal/fs/dev.go).
 
 > Under the Hood
 >
@@ -126,7 +126,7 @@ Namespaces isolated the kernel view. This chapter isolates the filesystem view a
 
 ## Try It Yourself
 
-Read [`internal/fs/rootfs.go`](/home/aayush/projects/crate/internal/fs/rootfs.go) and compare the `rootless` and `rootful` paths. Then start a container and inspect whether `/proc`, `/sys`, `/dev`, and `/run` exist as expected inside it.
+Read [`internal/fs/rootfs.go`](../internal/fs/rootfs.go) and compare the `rootless` and `rootful` paths. Then start a container and inspect whether `/proc`, `/sys`, `/dev`, and `/run` exist as expected inside it.
 
 ## Key Takeaways
 

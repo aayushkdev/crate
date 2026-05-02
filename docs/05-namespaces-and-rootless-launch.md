@@ -73,7 +73,7 @@ if cfg.Rootless {
 }
 ```
 
-The self-reexec handoff happens in [`cmd/crate/main.go`](/home/aayush/projects/crate/cmd/crate/main.go):
+The self-reexec handoff happens in [`cmd/crate/main.go`](../cmd/crate/main.go):
 
 ```go
 // cmd/crate/main.go

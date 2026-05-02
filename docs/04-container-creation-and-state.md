@@ -32,7 +32,7 @@ That is not enough to isolate anything yet, but it shows the core idea: a contai
 
 ## How Crate Uses It
 
-Container creation lives in [`internal/container/create.go`](/home/aayush/projects/crate/internal/container/create.go):
+Container creation lives in [`internal/container/create.go`](../internal/container/create.go):
 
 ```go
 // internal/container/create.go
@@ -70,13 +70,13 @@ for _, layer := range meta.Layers {
 }
 ```
 
-Creation also snapshots runtime defaults from the image config:
+Creation also snapshots runtime defaults from the image config blob:
 
 ```go
 // internal/container/config.go
 cfg := Config{
     ID:         id,
-    Image:      meta.Repo + ":" + meta.Tag,
+    Image:      primaryRepoTag(meta), // first local tag recorded for this manifest
     Rootless:   os.Geteuid() != 0, // launch policy captured at create time
     Cmd:        imgCfg.Config.Cmd,
     Env:        imgCfg.Config.Env,
@@ -90,7 +90,7 @@ Finally, Crate writes the first lifecycle record:
 // internal/container/create.go
 if err := writeState(id, &State{
     ID:        id,
-    Image:     meta.Repo + ":" + meta.Tag,
+    Image:     familiarRef(ref),
     Status:    StatusCreated,
     LogPath:   LogPath(id),
     CreatedAt: time.Now().UTC(),
@@ -102,6 +102,8 @@ if err := writeState(id, &State{
 > Under the Hood
 >
 > `create` is where Crate stops talking about images and starts talking about one specific container instance.
+
+Because image metadata is stored per manifest, not per tag file, `create` resolves the requested tag by scanning local manifest records for a matching `repoTags` entry. That keeps one metadata file authoritative even when tags move.
 
 ## Connecting the Dots
 

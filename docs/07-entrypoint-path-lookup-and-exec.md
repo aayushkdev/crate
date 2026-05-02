@@ -41,7 +41,7 @@ That distinction matters because Crate does not insert a shell layer automatical
 
 ## How Crate Uses It
 
-Crate resolves command precedence in [`internal/container/exec.go`](/home/aayush/projects/crate/internal/container/exec.go):
+Crate resolves command precedence in [`internal/container/exec.go`](../internal/container/exec.go):
 
 ```go
 // internal/container/exec.go
@@ -81,7 +81,7 @@ for _, dir := range strings.Split(path, ":") {
 }
 ```
 
-The final handoff is the irreversible step in [`internal/container/container.go`](/home/aayush/projects/crate/internal/container/container.go):
+The final handoff is the irreversible step in [`internal/container/container.go`](../internal/container/container.go):
 
 ```go
 // internal/container/container.go
@@ -117,7 +117,7 @@ go run ./cmd/crate run alpine /bin/sh -c 'echo hello'
 go run ./cmd/crate run alpine sh
 ```
 
-Then inspect [`internal/container/exec.go`](/home/aayush/projects/crate/internal/container/exec.go) and reason about why the second command depends on PATH and the first one does not.
+Then inspect [`internal/container/exec.go`](../internal/container/exec.go) and reason about why the second command depends on PATH and the first one does not.
 
 ## Key Takeaways
 

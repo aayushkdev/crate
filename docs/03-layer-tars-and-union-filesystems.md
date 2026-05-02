@@ -33,7 +33,7 @@ A real OCI layer also needs a way to express deletion. Overlay-based image forma
 
 Crate does not mount overlayfs. It teaches the model by replaying layer tarballs into a plain directory.
 
-The replay loop is in [`internal/fs/layer.go`](/home/aayush/projects/crate/internal/fs/layer.go):
+The replay loop is in [`internal/fs/layer.go`](../internal/fs/layer.go):
 
 ```go
 // internal/fs/layer.go
@@ -96,7 +96,7 @@ The manifest chapter produced an ordered list of layer digests. This chapter exp
 
 ## Try It Yourself
 
-Pull an image, find one unpacked container later under Crate's data directory, and inspect how files that were added, overwritten, or deleted across layers appear in the final rootfs. Then read the whiteout handling code in [`internal/fs/layer.go`](/home/aayush/projects/crate/internal/fs/layer.go) with that result in mind.
+Pull an image, find one unpacked container later under Crate's data directory, and inspect how files that were added, overwritten, or deleted across layers appear in the final rootfs. Then read the whiteout handling code in [`internal/fs/layer.go`](../internal/fs/layer.go) with that result in mind.
 
 ## Key Takeaways
 

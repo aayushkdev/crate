@@ -42,7 +42,7 @@ That shell snippet is not "container magic". It is just HTTPS plus JSON.
 
 ## How Crate Uses It
 
-Crate normalizes references first, then pulls only when local metadata is missing.
+Crate normalizes references first, resolves the current tag at the registry, then checks whether the resolved manifest is already present locally.
 
 ```go
 // internal/image/reference.go
@@ -65,31 +65,36 @@ if err != nil {
     return err
 }
 
-if MetadataExists(imgRef) {
+manifestData, contentType, manifestDigest, err := fetchManifestByTag(imgRef)
+if err != nil {
+    return err
+}
+
+img, err := resolveManifest(imgRef, manifestData, contentType, manifestDigest)
+if err != nil {
+    return err
+}
+
+if current, err := ReadMetadata(imgRef); err == nil && current.ManifestDigest == img.ManifestDigest {
     fmt.Println("Image already present")
     return nil
 }
-
-manifestData, contentType, err := fetchManifestByTag(imgRef)
-if err != nil {
-    return err
-}
-
-img, err := resolveManifest(imgRef, manifestData, contentType)
-if err != nil {
-    return err
-}
 ```
 
-The equivalent raw Linux approach is just "fetch JSON, then download files", but Crate adds a small amount of policy:
+After resolution, Crate stores one JSON file per manifest digest under `~/.local/share/crate/images/`. Tags live inside that file as `repoTags`, so a local lookup scans manifest records and finds the one that owns `alpine:latest` or whatever tag the user asked for.
 
-- short-name normalization in [`internal/image/reference.go`](/home/aayush/projects/crate/internal/image/reference.go)
-- local metadata existence checks in [`internal/image/pull.go`](/home/aayush/projects/crate/internal/image/pull.go)
+If a tag moves to a different manifest later, Crate removes that tag from the old manifest record and adds it to the new one. If the old manifest becomes untagged, Crate deletes its metadata file and prunes its config and layer blobs only when no other local manifest still references them.
+
+The equivalent raw Linux approach is just "fetch JSON, then download files", but Crate adds a small amount of policy and local bookkeeping:
+
+- short-name normalization in [`internal/image/reference.go`](../internal/image/reference.go)
+- resolved-manifest comparison in [`internal/image/pull.go`](../internal/image/pull.go)
+- manifest-backed metadata in [`internal/image/metadata.go`](../internal/image/metadata.go)
 - digest-addressed blob storage in the image package
 
 > ⚠ Watch out
 >
-> `latest` is a convenience tag, not a stable identity. The stable unit is the digest that arrives after manifest resolution.
+> `latest` is a convenience tag, not a stable identity. Crate re-resolves the tag on every pull and only skips work when the resolved manifest digest matches local metadata.
 
 ## Connecting the Dots
 
@@ -104,11 +109,12 @@ go run ./cmd/crate pull alpine
 go run ./cmd/crate pull alpine
 ```
 
-Then inspect the local image store and compare the first run to the second. The first run should resolve and download; the second should hit the metadata fast path.
+Then inspect the local image store and compare the first run to the second. The first run should resolve and download; the second should still contact the registry to resolve `latest`, but it should stop once the local manifest digest matches.
 
 ## Key Takeaways
 
 - Image pulling starts from a mutable name and ends with immutable local content.
 - Linux provides the networking and file primitives; the registry protocol lives in userspace.
+- Crate stores local image metadata by manifest digest, not by tag filename.
 - Crate keeps reference parsing and pull policy explicit so the flow is easy to follow.
 - Pulling is only the front door; manifests decide what content actually belongs to a tag.

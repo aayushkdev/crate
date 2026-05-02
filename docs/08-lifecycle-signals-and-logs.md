@@ -36,7 +36,7 @@ kill -TERM "-$pgid" # send the signal to the whole process group
 
 ## How Crate Uses It
 
-Crate persists container lifecycle data in [`internal/container/state.go`](/home/aayush/projects/crate/internal/container/state.go):
+Crate persists container lifecycle data in [`internal/container/state.go`](../internal/container/state.go):
 
 ```go
 // internal/container/state.go
@@ -54,7 +54,7 @@ type State struct {
 }
 ```
 
-Launch-time state and logging are recorded in [`internal/runtime/launch.go`](/home/aayush/projects/crate/internal/runtime/launch.go):
+Launch-time state and logging are recorded in [`internal/runtime/launch.go`](../internal/runtime/launch.go):
 
 ```go
 // internal/runtime/launch.go
@@ -84,7 +84,7 @@ state := &container.State{
 }
 ```
 
-Stopping uses the standard TERM-then-KILL sequence in [`internal/runtime/stop.go`](/home/aayush/projects/crate/internal/runtime/stop.go):
+Stopping uses the standard TERM-then-KILL sequence in [`internal/runtime/stop.go`](../internal/runtime/stop.go):
 
 ```go
 // internal/runtime/stop.go

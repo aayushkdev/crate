@@ -72,12 +72,17 @@ When Crate reaches a single manifest, it extracts the exact config and layer dig
 ```go
 // internal/image/manifest.go
 return &ImageManifest{
-    Config: sm.Config.Digest,
-    Layers: layers,
+    ManifestDigest: digest,
+    ConfigDigest:   sm.Config.Digest,
+    Layers:         layers,
+    OS:             osName,
+    Architecture:   arch,
 }, nil
 ```
 
-The raw Linux equivalent is still just JSON parsing, but Crate adds one key policy choice: it hardcodes `linux/amd64` today.
+That distinction matters. The manifest digest is the immutable identity of the image Crate pulled. The config digest is just one blob inside that image, used later to recover defaults like `Cmd`, `Env`, and `Entrypoint`.
+
+The raw Linux equivalent is still just JSON parsing, but Crate adds one key policy choice: it hardcodes `linux/amd64` today and stores the selected `os` and `architecture` in local metadata.
 
 > Under the Hood
 >
@@ -93,11 +98,12 @@ Chapter 1 got us to the registry. This chapter turns registry responses into a c
 
 ## Try It Yourself
 
-Pull an image with a multi-platform index such as `alpine`, then inspect the manifest code in [`internal/image/manifest.go`](/home/aayush/projects/crate/internal/image/manifest.go). Change the selected platform locally only if you understand the consequences: the runtime will try to unpack whatever digests you choose, even if they do not match the host architecture.
+Pull an image with a multi-platform index such as `alpine`, then inspect the manifest code in [`internal/image/manifest.go`](../internal/image/manifest.go). Change the selected platform locally only if you understand the consequences: the runtime will try to unpack whatever digests you choose, even if they do not match the host architecture.
 
 ## Key Takeaways
 
 - Tags resolve through manifests, not directly to layer blobs.
 - A manifest list adds a platform-selection step before any concrete filesystem exists.
 - Crate handles both single manifests and indexes with one recursive resolver.
+- Manifest digest and config digest are different objects and serve different roles.
 - Platform selection is runtime policy, not just transport logic.
