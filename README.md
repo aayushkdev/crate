@@ -78,6 +78,8 @@ crate start -d c144672a8e04
 
 If no command is provided, the image’s default `CMD` is used.
 
+In attached mode, Crate allocates a real PTY so interactive shells and terminal programs behave normally.
+
 ---
 
 ### Run (create + start)
@@ -195,6 +197,7 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 * PID 1 replaced with the container process using `execve`
 * Proper PATH-based command resolution (no shell)
 * CMD, Entrypoint and environment variables used from image config
+* PTY-backed attached mode for interactive shells and terminal programs
 * Container lifecycle commands: `start`, `stop`, `ps`, `logs`, `rm`, and detached mode
 
 

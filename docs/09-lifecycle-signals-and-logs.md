@@ -1,4 +1,4 @@
-# Chapter 8 - Lifecycle, Signals, and Logs
+# Chapter 9 - Lifecycle, Signals, and Logs
 
 Once a container process exists, a runtime still needs to manage it. That means tracking state, stopping it cleanly, and preserving output.
 
@@ -58,11 +58,7 @@ Launch-time state and logging are recorded in [`internal/runtime/launch.go`](../
 
 ```go
 // internal/runtime/launch.go
-if attach {
-    cmd.Stdin = os.Stdin
-    cmd.Stdout = io.MultiWriter(os.Stdout, logFile)
-    cmd.Stderr = io.MultiWriter(os.Stderr, logFile)
-} else {
+if !attach {
     cmd.SysProcAttr.Setpgid = true // detached container gets its own process group
     cmd.Stdout = logFile
     cmd.Stderr = logFile
@@ -145,7 +141,7 @@ return removeContainerDir(id)
 
 ## Connecting the Dots
 
-This chapter closes the loop. The earlier chapters explained how Crate obtains image content, builds a rootfs, launches a namespaced process, and `exec`s the workload. Lifecycle is what makes all of that usable after startup.
+This chapter closes the loop. The earlier chapters explained how Crate obtains image content, builds a rootfs, launches a namespaced process, gives that process terminal semantics when needed, and `exec`s the workload. Lifecycle is what makes all of that usable after startup.
 
 ## Try It Yourself
 
@@ -169,6 +165,5 @@ go run ./cmd/crate rm "$id"
 
 - Lifecycle management is built from ordinary Linux primitives: files, PIDs, signals, and process groups.
 - Crate persists container state explicitly instead of depending on a daemon.
-- Detached mode changes stdio and process-group handling, not the fundamental launch model.
 - `crate rm` is just another state transition plus directory cleanup, not a special privileged subsystem.
 - TERM followed by KILL is a policy choice that balances graceful shutdown and predictability.

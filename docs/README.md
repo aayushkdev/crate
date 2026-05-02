@@ -13,6 +13,7 @@ This edition covers the concepts Crate actually implements today:
 5. [Namespaces and Rootless Launch](./05-namespaces-and-rootless-launch.md)
 6. [Root Filesystem Switching and Mounts](./06-root-filesystem-switching-and-mounts.md)
 7. [Entrypoint, PATH Lookup, and exec](./07-entrypoint-path-lookup-and-exec.md)
-8. [Lifecycle, Signals, and Logs](./08-lifecycle-signals-and-logs.md)
+8. [Terminals and PTYs](./08-terminals-and-ptys.md)
+9. [Lifecycle, Signals, and Logs](./09-lifecycle-signals-and-logs.md)
 
 Topics such as cgroups, seccomp, networking, capabilities, and IPC are natural future chapters once the codebase grows those subsystems.

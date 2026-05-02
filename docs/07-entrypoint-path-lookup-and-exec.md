@@ -96,6 +96,8 @@ Fatal(syscall.Exec(execPath, cmd, env)) // runtime disappears here
 
 This is the equivalent of the earlier raw Linux `execve` example, but with image-config-aware command composition and explicit PATH lookup.
 
+When you run Crate in attached mode, the final program also inherits a real pseudo-terminal from the launch path. That does not change what `execve` runs, but it does change how interactive programs such as shells, `vi`, or `top` perceive stdin/stdout.
+
 > Under the Hood
 >
 > Once `syscall.Exec` succeeds, there is no Crate process left inside the container. The workload is now PID 1 in that namespace.
@@ -106,7 +108,7 @@ This is the equivalent of the earlier raw Linux `execve` example, but with image
 
 ## Connecting the Dots
 
-The previous chapter built an isolated execution environment. This chapter places a real workload into that environment. The next chapter steps back out and looks at how Crate keeps managing that workload afterward through lifecycle state, logs, and signals.
+The previous chapter built an isolated execution environment. This chapter places a real workload into that environment and decides what program becomes PID 1. The next chapter explains why an attached shell feels like a terminal session instead of a subprocess behind pipes.
 
 ## Try It Yourself
 
@@ -117,11 +119,12 @@ go run ./cmd/crate run alpine /bin/sh -c 'echo hello'
 go run ./cmd/crate run alpine sh
 ```
 
-Then inspect [`internal/container/exec.go`](../internal/container/exec.go) and reason about why the second command depends on PATH and the first one does not.
+Then inspect [`internal/container/exec.go`](../internal/container/exec.go) and reason about why the second command depends on PATH and the first one does not. If you start an interactive shell, notice that attached mode behaves like a normal terminal because the launch path provides a PTY.
 
 ## Key Takeaways
 
 - Container startup ends with one concrete `argv`, not a vague notion of "run the image".
 - Crate resolves `Entrypoint`, `Cmd`, and user overrides explicitly.
 - PATH lookup is done by the runtime, not by an implicit shell wrapper.
+- Attached interactive behavior depends on PTY setup, not on shell injection.
 - `syscall.Exec` is the handoff where the workload becomes PID 1.
