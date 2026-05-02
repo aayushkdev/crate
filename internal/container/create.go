@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/aayushkdev/crate/internal/fs"
 	"github.com/aayushkdev/crate/internal/image"
@@ -63,6 +64,16 @@ func Create(imageName string) (string, error) {
 	}
 
 	if err := writeConfig(id, meta); err != nil {
+		return "", err
+	}
+
+	if err := writeState(id, &State{
+		ID:        id,
+		Image:     meta.Repo + ":" + meta.Tag,
+		Status:    StatusCreated,
+		LogPath:   LogPath(id),
+		CreatedAt: time.Now().UTC(),
+	}); err != nil {
 		return "", err
 	}
 

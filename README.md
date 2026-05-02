@@ -50,6 +50,8 @@ Starts an existing container by ID.
 crate start <CONTAINER_ID> [COMMAND] [ARG...]
 ```
 
+Add `-d` / `--detach` to start it in the background.
+
 Examples:
 
 ```bash
@@ -58,6 +60,10 @@ crate start c144672a8e04
 
 ```bash
 crate start c144672a8e04 ls -l /
+```
+
+```bash
+crate start -d c144672a8e04
 ```
 
 If no command is provided, the image’s default `CMD` is used.
@@ -74,6 +80,52 @@ crate run alpine
 
 ```bash
 crate run alpine /bin/sh -c "echo hello world"  
+```
+
+```bash
+crate run -d alpine
+```
+
+---
+
+### Stop a container
+
+Stops one or more running containers by ID.
+
+```bash
+crate stop <CONTAINER_ID>
+```
+
+---
+
+### List containers
+
+Lists running containers by default.
+
+```bash
+crate ps
+```
+
+Show all containers:
+
+```bash
+crate ps -a
+```
+
+---
+
+### View logs
+
+Prints a container’s captured stdout/stderr.
+
+```bash
+crate logs <CONTAINER_ID>
+```
+
+Follow output:
+
+```bash
+crate logs -f <CONTAINER_ID>
 ```
 
 
@@ -100,18 +152,18 @@ crate run alpine /bin/sh -c "echo hello world"
 * Pulling images from registries (docker only for now)
 * OCI/Docker manifest resolution
 * Local blob store (layers and config)
-* Local image metadata cache (Prevents unecessary pulls)
+* Local image metadata cache (Prevents unnecessary pulls)
 
 ### Process execution
 
 * PID 1 replaced with the container process using `execve`
 * Proper PATH-based command resolution (no shell)
 * CMD, Entrypoint and environment variables used from image config
+* Container lifecycle commands: `start`, `stop`, `ps`, `logs`, and detached mode
 
 
 ## Far off goals (for now)
 
-* Better Process management
 * Networking
 * Cgroups / resource limits
 * Volume mounts
