@@ -85,6 +85,12 @@ After resolution, Crate stores one JSON file per manifest digest under `~/.local
 
 If a tag moves to a different manifest later, Crate removes that tag from the old manifest record and adds it to the new one. If the old manifest becomes untagged, Crate deletes its metadata file and prunes its config and layer blobs only when no other local manifest still references them.
 
+The same metadata powers the local image management commands:
+
+- `crate images` flattens `repoTags` into rows and shows `name`, `image id`, and `size`
+- `crate rmi alpine:latest` removes that local tag from the owning manifest record
+- if no tags remain, Crate deletes the manifest metadata and prunes unreferenced blobs
+
 The equivalent raw Linux approach is just "fetch JSON, then download files", but Crate adds a small amount of policy and local bookkeeping:
 
 - short-name normalization in [`internal/image/reference.go`](../internal/image/reference.go)
@@ -111,10 +117,20 @@ go run ./cmd/crate pull alpine
 
 Then inspect the local image store and compare the first run to the second. The first run should resolve and download; the second should still contact the registry to resolve `latest`, but it should stop once the local manifest digest matches.
 
+Then run:
+
+```sh
+go run ./cmd/crate images
+go run ./cmd/crate rmi alpine:latest
+```
+
+and inspect how the local metadata changes.
+
 ## Key Takeaways
 
 - Image pulling starts from a mutable name and ends with immutable local content.
 - Linux provides the networking and file primitives; the registry protocol lives in userspace.
 - Crate stores local image metadata by manifest digest, not by tag filename.
+- `crate images` and `crate rmi` are thin views over that manifest-backed store.
 - Crate keeps reference parsing and pull policy explicit so the flow is easy to follow.
 - Pulling is only the front door; manifests decide what content actually belongs to a tag.

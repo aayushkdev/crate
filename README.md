@@ -28,7 +28,17 @@ Pulls an image from a registry and stores it in the local image store.
 ```bash
 crate pull alpine
 ```
-If the image already exists locally, the pull is skipped.
+Crate resolves the tag on each pull and skips blob work when the resolved manifest digest is already present locally.
+
+---
+
+### List images
+
+Lists local images from the manifest-backed metadata store.
+
+```bash
+crate images
+```
 
 ---
 
@@ -98,6 +108,18 @@ crate stop <CONTAINER_ID>
 
 ---
 
+### Remove containers
+
+Removes one or more stopped containers.
+
+```bash
+crate rm <CONTAINER_ID>
+```
+
+Running containers must be stopped first.
+
+---
+
 ### List containers
 
 Lists running containers by default.
@@ -128,6 +150,18 @@ Follow output:
 crate logs -f <CONTAINER_ID>
 ```
 
+---
+
+### Remove images
+
+Removes one or more local image tags.
+
+```bash
+crate rmi alpine:latest
+```
+
+If removing a tag leaves a manifest untagged, Crate deletes that manifest metadata and prunes any config or layer blobs that are no longer referenced by another local image.
+
 
 ## Implemented Concepts
 
@@ -151,15 +185,17 @@ crate logs -f <CONTAINER_ID>
 * Image name parsing (`repo:tag`)
 * Pulling images from registries (docker only for now)
 * OCI/Docker manifest resolution
+* Manifest-based local image metadata with mutable local tags
 * Local blob store (layers and config)
-* Local image metadata cache (Prevents unnecessary pulls)
+* Local image listing and removal
+* Blob pruning when untagged manifests become unreferenced
 
 ### Process execution
 
 * PID 1 replaced with the container process using `execve`
 * Proper PATH-based command resolution (no shell)
 * CMD, Entrypoint and environment variables used from image config
-* Container lifecycle commands: `start`, `stop`, `ps`, `logs`, and detached mode
+* Container lifecycle commands: `start`, `stop`, `ps`, `logs`, `rm`, and detached mode
 
 
 ## Far off goals (for now)

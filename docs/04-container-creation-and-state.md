@@ -12,6 +12,7 @@ Creation has to answer a different question from pulling:
 - how will later commands find it again?
 
 If the runtime does not materialize that state explicitly, `start`, `ps`, `logs`, and `stop` all become much harder.
+It also becomes hard to know when a container can be removed safely.
 
 ## How Linux Does It
 
@@ -105,6 +106,8 @@ if err := writeState(id, &State{
 
 Because image metadata is stored per manifest, not per tag file, `create` resolves the requested tag by scanning local manifest records for a matching `repoTags` entry. That keeps one metadata file authoritative even when tags move.
 
+The same state files are what make `crate rm` simple later. Removal does not talk to a daemon. It refreshes `state.json`, refuses to remove running containers, and deletes the container directory only after that check passes.
+
 ## Connecting the Dots
 
 Layers gave us a recipe for constructing a root filesystem. Creation turns that recipe into a specific on-disk bundle with config and lifecycle state. The next chapter uses that bundle to launch a process in new namespaces.
@@ -120,9 +123,18 @@ echo "$id"
 
 Then inspect the container directory under Crate's data root. Look at `rootfs`, `config.json`, and `state.json` before ever calling `start`.
 
+After stopping the container, try:
+
+```sh
+go run ./cmd/crate rm "$id"
+```
+
+and confirm that the container directory disappears.
+
 ## Key Takeaways
 
 - A container is a concrete on-disk instance, not just an image plus a PID.
 - Crate auto-pulls missing images during creation to keep the workflow simple.
 - `config.json` captures process defaults; `state.json` captures lifecycle state.
+- `crate rm` works because container state is durable and inspectable on disk.
 - `create` is the bridge between immutable image content and mutable runtime state.

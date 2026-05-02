@@ -11,7 +11,7 @@ Image pulling, filesystem setup, and `exec` get a workload running, but they do 
 - where does stdout go after detached start?
 - how do later commands find the right process again?
 
-Lifecycle is the layer that turns one process launch into a usable runtime.
+Lifecycle is the layer that turns one process launch into a usable runtime, and later back into removable on-disk state.
 
 ## How Linux Does It
 
@@ -119,6 +119,22 @@ if state.Status == StatusRunning && !ProcessAlive(state.PID) {
 }
 ```
 
+Removal follows the same file-based model:
+
+```go
+// internal/container/remove.go
+state, err := RefreshState(id)
+if err != nil {
+    return err
+}
+
+if state.Status == StatusRunning || state.Status == StatusStopping {
+    return fmt.Errorf("container %s is running; stop it first", id)
+}
+
+return removeContainerDir(id)
+```
+
 > Under the Hood
 >
 > Crate's lifecycle model is file-based, not daemon-based. That is a deliberate teaching tradeoff: state stays inspectable with normal tools.
@@ -143,11 +159,16 @@ go run ./cmd/crate stop "$id"
 go run ./cmd/crate ps -a
 ```
 
-Watch how `state.json` and the visible status evolve across those commands.
+Watch how `state.json` and the visible status evolve across those commands. Then stop and remove the container:
+
+```sh
+go run ./cmd/crate rm "$id"
+```
 
 ## Key Takeaways
 
 - Lifecycle management is built from ordinary Linux primitives: files, PIDs, signals, and process groups.
 - Crate persists container state explicitly instead of depending on a daemon.
 - Detached mode changes stdio and process-group handling, not the fundamental launch model.
+- `crate rm` is just another state transition plus directory cleanup, not a special privileged subsystem.
 - TERM followed by KILL is a policy choice that balances graceful shutdown and predictability.
