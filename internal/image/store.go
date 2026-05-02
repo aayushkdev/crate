@@ -52,6 +52,19 @@ func blobExists(digest string) (bool, error) {
 	return false, err
 }
 
+func deleteBlobByDigest(digest string) error {
+	path, err := BlobPath(digest)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
+}
+
 func downloadBlob(ref *Reference, digest string) error {
 	exists, err := blobExists(digest)
 	if err != nil {

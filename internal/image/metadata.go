@@ -111,6 +111,19 @@ func writeMetadataByDigest(meta *ImageMetadata) error {
 	return enc.Encode(meta)
 }
 
+func deleteMetadataByDigest(digest string) error {
+	path, err := imageMetaPathByDigest(digest)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
+}
+
 func ReadMetadata(ref *Reference) (*ImageMetadata, error) {
 	metas, err := readAllMetadata()
 	if err != nil {
@@ -202,6 +215,19 @@ func RemoveRepoTag(ref *Reference, manifestDigest string) error {
 		}
 	}
 	meta.RepoTags = filtered
+
+	if len(meta.RepoTags) == 0 {
+		metas, err := readAllMetadata()
+		if err != nil {
+			return err
+		}
+
+		if err := pruneImageBlobs(meta, metas); err != nil {
+			return err
+		}
+
+		return deleteMetadataByDigest(manifestDigest)
+	}
 
 	if err := writeMetadataByDigest(meta); err != nil {
 		return err
