@@ -1,7 +1,7 @@
 # crate
 
-Crate is a small container runtime written in Go, built to explore containers work internally.
-It supports both rootless (without sudo) and rootful (with sudo) execution, with rootless mode being the main focus.
+Crate is a small daemonless container runtime written in Go for Linux.
+It launches containers directly, persists runtime state on disk instead of relying on a long-lived background daemon, and supports both rootless and rootful execution.
 
 ---
 
@@ -173,6 +173,7 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 * UTS namespace (hostname)
 * Mount namespace
 * User namespace (rootless mode)
+* Network namespace
 
 ### Filesystem
 
@@ -200,12 +201,26 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 * PTY-backed attached mode for interactive shells and terminal programs
 * Container lifecycle commands: `start`, `stop`, `ps`, `logs`, `rm`, and detached mode
 
+### Networking
+
+* Host, private, and disabled networking modes
+* Private network namespaces created with `CLONE_NEWNET`
+* Rootless private networking via `pasta`
+* Loopback brought up inside isolated network namespaces
+* `/etc/hosts` and `/etc/resolv.conf` copied into the container rootfs
+* Parent/child synchronization so workloads start after network setup
+* Automatic fallback from private networking to disabled networking when `pasta` is unavailable
+* Network helper lifecycle tracking and teardown
+
 
 ## Far off goals (for now)
 
-* Networking
 * Cgroups / resource limits
 * Volume mounts
 * More configuration options
 * Security hardening
 * Full OCI spec compliance
+
+## Notes
+
+In rootless mode, privilege-drop flows inside the container do not work. Switching from container root to another user/group after startup with tools like `setpriv`, `su`, or similar mechanisms fails because unprivileged GID mapping requires disabling `setgroups(2)`.

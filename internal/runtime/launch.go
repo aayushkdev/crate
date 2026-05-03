@@ -3,6 +3,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,7 +53,8 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		defer syncR.Close()
 
 		cmd.ExtraFiles = append(cmd.ExtraFiles, syncR)
-		cmd.Env = append(cmd.Env, cratenet.SyncEnv(3))
+		syncFD := 3 + len(cmd.ExtraFiles) - 1
+		cmd.Env = append(cmd.Env, cratenet.SyncEnv(syncFD))
 		syncW = pipeW
 	}
 	if cfg.Rootless {
@@ -102,9 +104,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 	if cfg.Rootless {
 		if err := configureRootlessUserNS(cmd.Process.Pid); err != nil {
-			_ = syncW.Close()
-			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-			_ = cmd.Process.Kill()
+			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
 			return err
 		}
 	}
@@ -112,39 +112,29 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	if err := container.UpdateState(containerID, func(s *container.State) {
 		*s = *state
 	}); err != nil {
-		if syncW != nil {
-			_ = syncW.Close()
-		}
-		_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-		_ = cmd.Process.Kill()
+		cleanupLaunch(syncW, cmd.Process.Pid, containerID)
 		return err
 	}
 
 	if syncW != nil {
 		if err := cratenet.Setup(containerID, cmd.Process.Pid, netCfg); err != nil {
-			_ = syncW.Close()
-			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-			_ = cmd.Process.Kill()
+			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
 			return err
 		}
 
 		if _, err := syncW.Write([]byte{1}); err != nil {
-			_ = syncW.Close()
-			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-			_ = cmd.Process.Kill()
-			_ = cratenet.Teardown(containerID)
+			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
 			return err
 		}
 
 		if err := syncW.Close(); err != nil {
-			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-			_ = cmd.Process.Kill()
-			_ = cratenet.Teardown(containerID)
+			cleanupLaunch(nil, cmd.Process.Pid, containerID)
 			return err
 		}
 	}
 
 	if !wait {
+		go reapDetached(containerID, cmd)
 		return nil
 	}
 
@@ -152,30 +142,15 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		if err := relayAttached(ptmx, logFile); err != nil {
 			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
 			_ = cmd.Process.Kill()
+			waitErr := cmd.Wait()
+			if finalizeErr := finalizeContainer(containerID, waitErr); finalizeErr != nil {
+				log.Printf("crate: finalize attached container %s after relay error: %v", containerID, finalizeErr)
+			}
 			return err
 		}
 	}
 
-	waitErr := cmd.Wait()
-	exitCode := exitCode(waitErr)
-	status := container.StatusExited
-	current, err := container.ReadState(containerID)
-	if err == nil && current.Status == container.StatusStopping {
-		status = container.StatusStopped
-	}
-	if err := container.UpdateState(containerID, func(s *container.State) {
-		s.Status = status
-		s.ExitCode = exitCode
-		s.FinishedAt = time.Now().UTC()
-	}); err != nil {
-		return err
-	}
-
-	if err := cratenet.Teardown(containerID); err != nil {
-		return err
-	}
-
-	return waitErr
+	return finalizeContainer(containerID, cmd.Wait())
 }
 
 func killProcessGroup(pid int, sig syscall.Signal) error {
@@ -196,6 +171,44 @@ func waitForExit(pid int, timeout time.Duration) bool {
 	}
 
 	return !container.ProcessAlive(pid)
+}
+
+func cleanupLaunch(syncW *os.File, pid int, containerID string) {
+	if syncW != nil {
+		_ = syncW.Close()
+	}
+	if pid > 0 {
+		_ = killProcessGroup(pid, syscall.SIGKILL)
+	}
+	_ = cratenet.Teardown(containerID)
+}
+
+func reapDetached(containerID string, cmd *exec.Cmd) {
+	if err := finalizeContainer(containerID, cmd.Wait()); err != nil {
+		log.Printf("crate: finalize detached container %s: %v", containerID, err)
+	}
+}
+
+func finalizeContainer(containerID string, waitErr error) error {
+	exitCode := exitCode(waitErr)
+	status := container.StatusExited
+	current, err := container.ReadState(containerID)
+	if err == nil && current.Status == container.StatusStopping {
+		status = container.StatusStopped
+	}
+	if err := container.UpdateState(containerID, func(s *container.State) {
+		s.Status = status
+		s.ExitCode = exitCode
+		s.FinishedAt = time.Now().UTC()
+	}); err != nil {
+		return err
+	}
+
+	if err := cratenet.Teardown(containerID); err != nil {
+		return err
+	}
+
+	return waitErr
 }
 
 func exitCode(err error) int {

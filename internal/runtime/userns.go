@@ -154,7 +154,7 @@ func readSubIDFile(path string, username string, numericID string) ([]subIDRange
 
 func writeSetgroupsDeny(pid int) error {
 	path := fmt.Sprintf("/proc/%d/setgroups", pid)
-	if err := os.WriteFile(path, []byte("deny"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("deny"), 0); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 
@@ -167,8 +167,8 @@ func runIDMapHelper(helper string, pid int, ranges []idMapRange) error {
 		return fmt.Errorf("%s is required for rootless multi-ID mapping: %w", helper, err)
 	}
 
-	args := make([]string, 0, 2+len(ranges)*3)
-	args = append(args, path, strconv.Itoa(pid))
+	args := make([]string, 0, 1+len(ranges)*3)
+	args = append(args, strconv.Itoa(pid))
 	for _, r := range ranges {
 		args = append(
 			args,
@@ -178,7 +178,7 @@ func runIDMapHelper(helper string, pid int, ranges []idMapRange) error {
 		)
 	}
 
-	cmd := exec.Command(path, args[1:]...)
+	cmd := exec.Command(path, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(output))

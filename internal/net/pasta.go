@@ -99,9 +99,6 @@ func waitForHelper(cmd *exec.Cmd, timeout time.Duration) error {
 
 	select {
 	case err := <-done:
-		if err == nil {
-			return fmt.Errorf("helper exited unexpectedly")
-		}
 		return err
 	case <-time.After(timeout):
 		return nil
