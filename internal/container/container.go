@@ -16,11 +16,15 @@ func InitContainer(containerID string, command []string) {
 
 	cfg, err := ReadConfig(containerID)
 	Fatal(err)
+	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := rootfsDir(containerID)
 
 	Fatal(syscall.Sethostname([]byte("crate")))
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
+	if cfg.Network.Mode == cratenet.ModeNone || cfg.Network.Mode == cratenet.ModePrivate {
+		Fatal(cratenet.BringUpLoopback())
+	}
 	if cfg.Network.Mode == cratenet.ModePrivate {
 		Fatal(cratenet.WaitForInterface(cfg.Network.InterfaceName, 5*time.Second))
 	}

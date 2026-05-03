@@ -20,10 +20,6 @@ func Setup(containerID string, pid int, cfg Config) error {
 		return nil
 	}
 
-	if _, err := exec.LookPath("pasta"); err != nil {
-		return fmt.Errorf("private rootless networking requires pasta to be installed: %w", err)
-	}
-
 	if err := prepareRootfsFiles(rootfsPath(containerID)); err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +19,14 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		return err
 	}
 
+	netCfg, warning, err := cratenet.ResolveRuntimeConfig(cfg.Network, cfg.Rootless)
+	if err != nil {
+		return err
+	}
+	if warning != "" {
+		fmt.Fprintf(os.Stderr, "crate: warning: %s\n", warning)
+	}
+
 	logPath := container.LogPath(containerID)
 	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
 		return err
@@ -32,9 +41,10 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	args := append([]string{"init", containerID}, command...)
 	cmd := exec.Command("/proc/self/exe", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	cmd.Env = append(os.Environ(), cratenet.ModeEnv(netCfg.Mode))
 
 	var syncW *os.File
-	if cratenet.RequiresNetNS(cfg.Network) {
+	if cratenet.RequiresNetNS(netCfg) {
 		syncR, pipeW, err := os.Pipe()
 		if err != nil {
 			return err
@@ -42,7 +52,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		defer syncR.Close()
 
 		cmd.ExtraFiles = append(cmd.ExtraFiles, syncR)
-		cmd.Env = append(os.Environ(), cratenet.SyncEnv(3))
+		cmd.Env = append(cmd.Env, cratenet.SyncEnv(3))
 		syncW = pipeW
 	}
 	if cfg.Rootless {
@@ -50,7 +60,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 			syscall.CLONE_NEWUTS |
 			syscall.CLONE_NEWPID |
 			syscall.CLONE_NEWNS
-		if cratenet.RequiresNetNS(cfg.Network) {
+		if cratenet.RequiresNetNS(netCfg) {
 			cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWNET
 		}
 
@@ -65,7 +75,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		cmd.SysProcAttr.Cloneflags = syscall.CLONE_NEWUTS |
 			syscall.CLONE_NEWPID |
 			syscall.CLONE_NEWNS
-		if cratenet.RequiresNetNS(cfg.Network) {
+		if cratenet.RequiresNetNS(netCfg) {
 			cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWNET
 		}
 	}
@@ -106,7 +116,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 
 	if syncW != nil {
-		if err := cratenet.Setup(containerID, cmd.Process.Pid, cfg.Network); err != nil {
+		if err := cratenet.Setup(containerID, cmd.Process.Pid, netCfg); err != nil {
 			_ = syncW.Close()
 			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
 			_ = cmd.Process.Kill()
