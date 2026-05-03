@@ -6,15 +6,17 @@ import (
 	"path/filepath"
 
 	"github.com/aayushkdev/crate/internal/image"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 )
 
 type Config struct {
-	ID         string   `json:"id"`
-	Image      string   `json:"image"`
-	Rootless   bool     `json:"rootless"`
-	Cmd        []string `json:"cmd,omitempty"`
-	Env        []string `json:"env,omitempty"`
-	EntryPoint []string `json:"entrypoint,omitempty"`
+	ID         string          `json:"id"`
+	Image      string          `json:"image"`
+	Rootless   bool            `json:"rootless"`
+	Cmd        []string        `json:"cmd,omitempty"`
+	Env        []string        `json:"env,omitempty"`
+	EntryPoint []string        `json:"entrypoint,omitempty"`
+	Network    cratenet.Config `json:"network,omitempty"`
 }
 
 func writeConfig(id string, meta *image.ImageMetadata) error {
@@ -33,6 +35,7 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 		Env:        imgCfg.Config.Env,
 		EntryPoint: imgCfg.Config.Entrypoint,
 	}
+	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -67,6 +70,10 @@ func ReadConfig(id string) (*Config, error) {
 
 	var cfg Config
 	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+		return nil, err
+	}
+	cfg.Network = cratenet.NormalizeConfig(cfg.Network, cfg.Rootless)
+	if err := cratenet.ValidateConfig(cfg.Network, cfg.Rootless); err != nil {
 		return nil, err
 	}
 	return &cfg, nil

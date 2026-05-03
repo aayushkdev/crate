@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aayushkdev/crate/internal/container"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 )
 
 func Stop(containerID string) error {
@@ -30,6 +31,10 @@ func Stop(containerID string) error {
 	}
 
 	if waitForExit(state.PID, 1*time.Second) {
+		if err := cratenet.Teardown(containerID); err != nil {
+			return err
+		}
+
 		return container.UpdateState(containerID, func(s *container.State) {
 			s.Status = container.StatusStopped
 			s.FinishedAt = time.Now().UTC()
@@ -41,6 +46,10 @@ func Stop(containerID string) error {
 	}
 
 	for !waitForExit(state.PID, 100*time.Millisecond) {
+	}
+
+	if err := cratenet.Teardown(containerID); err != nil {
+		return err
 	}
 
 	return container.UpdateState(containerID, func(s *container.State) {

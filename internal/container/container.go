@@ -5,11 +5,15 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/aayushkdev/crate/internal/fs"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 )
 
 func InitContainer(containerID string, command []string) {
+	Fatal(cratenet.WaitForParent())
+
 	cfg, err := ReadConfig(containerID)
 	Fatal(err)
 	rootfs := rootfsDir(containerID)
@@ -17,6 +21,9 @@ func InitContainer(containerID string, command []string) {
 	Fatal(syscall.Sethostname([]byte("crate")))
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
+	if cfg.Network.Mode == cratenet.ModePrivate {
+		Fatal(cratenet.WaitForInterface(cfg.Network.InterfaceName, 5*time.Second))
+	}
 
 	if len(command) == 0 {
 		command = cfg.Cmd
