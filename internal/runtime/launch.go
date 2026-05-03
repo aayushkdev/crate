@@ -99,13 +99,14 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 
 	state := &container.State{
-		ID:        containerID,
-		Image:     cfg.Image,
-		Command:   argv,
-		Status:    container.StatusRunning,
-		PID:       cmd.Process.Pid,
-		LogPath:   logPath,
-		StartedAt: time.Now().UTC(),
+		ID:          containerID,
+		Image:       cfg.Image,
+		Command:     argv,
+		Status:      container.StatusRunning,
+		PID:         cmd.Process.Pid,
+		LogPath:     logPath,
+		NetworkMode: string(netCfg.Mode),
+		StartedAt:   time.Now().UTC(),
 	}
 	if err := container.UpdateState(containerID, func(s *container.State) {
 		*s = *state

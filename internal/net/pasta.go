@@ -43,6 +43,7 @@ func Setup(containerID string, pid int, cfg Config) error {
 	}
 
 	if err := writeState(containerID, &State{
+		Mode:          cfg.Mode,
 		Backend:       "pasta",
 		HelperPID:     cmd.Process.Pid,
 		InterfaceName: cfg.InterfaceName,

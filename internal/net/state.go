@@ -9,6 +9,7 @@ import (
 )
 
 type State struct {
+	Mode          Mode   `json:"mode,omitempty"`
 	Backend       string `json:"backend"`
 	HelperPID     int    `json:"helper_pid"`
 	InterfaceName string `json:"interface_name"`

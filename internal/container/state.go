@@ -25,17 +25,18 @@ const (
 )
 
 type State struct {
-	ID         string    `json:"id"`
-	Image      string    `json:"image"`
-	Command    []string  `json:"command,omitempty"`
-	Status     Status    `json:"status"`
-	PID        int       `json:"pid,omitempty"`
-	ExitCode   int       `json:"exit_code,omitempty"`
-	LogPath    string    `json:"log_path,omitempty"`
-	CreatedAt  time.Time `json:"created_at,omitempty"`
-	StartedAt  time.Time `json:"started_at,omitempty"`
-	FinishedAt time.Time `json:"finished_at,omitempty"`
-	Error      string    `json:"error,omitempty"`
+	ID          string    `json:"id"`
+	Image       string    `json:"image"`
+	Command     []string  `json:"command,omitempty"`
+	Status      Status    `json:"status"`
+	PID         int       `json:"pid,omitempty"`
+	ExitCode    int       `json:"exit_code,omitempty"`
+	LogPath     string    `json:"log_path,omitempty"`
+	NetworkMode string    `json:"network_mode,omitempty"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+	StartedAt   time.Time `json:"started_at,omitempty"`
+	FinishedAt  time.Time `json:"finished_at,omitempty"`
+	Error       string    `json:"error,omitempty"`
 }
 
 type Summary struct {
