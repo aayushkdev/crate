@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
@@ -12,11 +13,19 @@ import (
 	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
-func InitContainer(containerID string, command []string) {
-	Fatal(cratenet.WaitForParent())
+const initMappedEnv = "CRATE_INIT_MAPPED"
 
+func InitContainer(containerID string, command []string) {
 	cfg, err := ReadConfig(containerID)
 	Fatal(err)
+
+	if os.Getenv(initMappedEnv) != "1" {
+		Fatal(cratenet.WaitForParent())
+		if cfg.Rootless {
+			Fatal(reexecMappedInit(containerID, command))
+		}
+	}
+
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := storage.ContainerRootfsPath(containerID)
 
@@ -42,6 +51,24 @@ func InitContainer(containerID string, command []string) {
 	Fatal(err)
 
 	Fatal(syscall.Exec(execPath, cmd, env))
+}
+
+func reexecMappedInit(containerID string, command []string) error {
+	argv := append([]string{"/proc/self/exe", "init", containerID}, command...)
+
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "CRATE_SYNC_FD=") {
+			continue
+		}
+		if strings.HasPrefix(entry, initMappedEnv+"=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	env = append(env, initMappedEnv+"=1")
+
+	return syscall.Exec("/proc/self/exe", argv, env)
 }
 
 func Fatal(err error) {

@@ -44,7 +44,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	cmd.Env = append(os.Environ(), cratenet.ModeEnv(netCfg.Mode))
 
 	var syncW *os.File
-	if cratenet.RequiresNetNS(netCfg) {
+	if cfg.Rootless || cratenet.RequiresNetNS(netCfg) {
 		syncR, pipeW, err := os.Pipe()
 		if err != nil {
 			return err
@@ -63,14 +63,6 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		if cratenet.RequiresNetNS(netCfg) {
 			cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWNET
 		}
-
-		cmd.SysProcAttr.UidMappings = []syscall.SysProcIDMap{
-			{ContainerID: 0, HostID: os.Getuid(), Size: 1},
-		}
-		cmd.SysProcAttr.GidMappings = []syscall.SysProcIDMap{
-			{ContainerID: 0, HostID: os.Getgid(), Size: 1},
-		}
-		cmd.SysProcAttr.GidMappingsEnableSetgroups = false
 	} else {
 		cmd.SysProcAttr.Cloneflags = syscall.CLONE_NEWUTS |
 			syscall.CLONE_NEWPID |
@@ -108,9 +100,21 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		NetworkMode: string(netCfg.Mode),
 		StartedAt:   time.Now().UTC(),
 	}
+	if cfg.Rootless {
+		if err := configureRootlessUserNS(cmd.Process.Pid); err != nil {
+			_ = syncW.Close()
+			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
+			_ = cmd.Process.Kill()
+			return err
+		}
+	}
+
 	if err := container.UpdateState(containerID, func(s *container.State) {
 		*s = *state
 	}); err != nil {
+		if syncW != nil {
+			_ = syncW.Close()
+		}
 		_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
 		_ = cmd.Process.Kill()
 		return err
