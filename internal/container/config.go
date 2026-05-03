@@ -1,12 +1,11 @@
 package container
 
 import (
-	"encoding/json"
 	"os"
-	"path/filepath"
 
 	"github.com/aayushkdev/crate/internal/image"
 	cratenet "github.com/aayushkdev/crate/internal/net"
+	filestate "github.com/aayushkdev/crate/internal/state"
 )
 
 type Config struct {
@@ -20,9 +19,6 @@ type Config struct {
 }
 
 func writeConfig(id string, meta *image.ImageMetadata) error {
-	dir := containerDir(id)
-	path := filepath.Join(dir, "config.json")
-
 	imgCfg, err := image.ReadImageConfig(meta.ConfigDigest)
 	if err != nil {
 		return err
@@ -37,19 +33,11 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 	}
 	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(filestate.ContainerDir(id), 0755); err != nil {
 		return err
 	}
 
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(cfg)
+	return filestate.Write(filestate.ContainerConfigPath(id), &cfg)
 }
 
 func primaryRepoTag(meta *image.ImageMetadata) string {
@@ -61,16 +49,10 @@ func primaryRepoTag(meta *image.ImageMetadata) string {
 }
 
 func ReadConfig(id string) (*Config, error) {
-	path := filepath.Join(containerDir(id), "config.json")
-	f, err := os.Open(path)
+	var cfg Config
+	err := filestate.Read(filestate.ContainerConfigPath(id), &cfg)
 	if err != nil {
 		return nil, wrapNotFound(id, err)
-	}
-	defer f.Close()
-
-	var cfg Config
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, err
 	}
 	cfg.Network = cratenet.NormalizeConfig(cfg.Network, cfg.Rootless)
 	if err := cratenet.ValidateConfig(cfg.Network, cfg.Rootless); err != nil {

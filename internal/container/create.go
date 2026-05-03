@@ -5,24 +5,16 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/aayushkdev/crate/internal/fs"
 	"github.com/aayushkdev/crate/internal/image"
+	filestate "github.com/aayushkdev/crate/internal/state"
 )
 
-func containerDir(id string) string {
-	return filepath.Join(image.CrateRoot(), "containers", id)
-}
-
 func removeContainerDir(id string) error {
-	return os.RemoveAll(containerDir(id))
-}
-
-func rootfsDir(id string) string {
-	return filepath.Join(containerDir(id), "rootfs")
+	return os.RemoveAll(filestate.ContainerDir(id))
 }
 
 func generateID() string {
@@ -53,7 +45,7 @@ func Create(imageName string) (string, error) {
 
 	id := generateID()
 
-	rootfs := rootfsDir(id)
+	rootfs := filestate.ContainerRootfsPath(id)
 	if err := os.MkdirAll(rootfs, 0755); err != nil {
 		return "", err
 	}
@@ -76,7 +68,7 @@ func Create(imageName string) (string, error) {
 		ID:        id,
 		Image:     familiarRef(ref),
 		Status:    StatusCreated,
-		LogPath:   LogPath(id),
+		LogPath:   filestate.ContainerLogPath(id),
 		CreatedAt: time.Now().UTC(),
 	}); err != nil {
 		return "", err

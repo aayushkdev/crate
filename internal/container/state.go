@@ -48,22 +48,17 @@ type Summary struct {
 	ExitCode int
 }
 
-func statePath(id string) string {
-	return filepath.Join(containerDir(id), "state.json")
-}
-
 func LogPath(id string) string {
-	return filepath.Join(containerDir(id), "logs", "container.log")
+	return filestate.ContainerLogPath(id)
 }
 
 func writeState(id string, state *State) error {
-	return filestate.Write(statePath(id), state)
+	return filestate.Write(filestate.ContainerStatePath(id), state)
 }
 
 func ReadState(id string) (*State, error) {
-	path := statePath(id)
 	var state State
-	err := filestate.Read(path, &state)
+	err := filestate.Read(filestate.ContainerStatePath(id), &state)
 	if err != nil {
 		return nil, wrapNotFound(id, err)
 	}
