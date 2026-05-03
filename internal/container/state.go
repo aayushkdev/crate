@@ -1,7 +1,6 @@
 package container
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aayushkdev/crate/internal/image"
+	filestate "github.com/aayushkdev/crate/internal/state"
 )
 
 type Status string
@@ -57,38 +57,15 @@ func LogPath(id string) string {
 }
 
 func writeState(id string, state *State) error {
-	path := statePath(id)
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	tmp := path + ".tmp"
-	f, err := os.Create(tmp)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(state); err != nil {
-		return err
-	}
-
-	return os.Rename(tmp, path)
+	return filestate.Write(statePath(id), state)
 }
 
 func ReadState(id string) (*State, error) {
 	path := statePath(id)
-	f, err := os.Open(path)
+	var state State
+	err := filestate.Read(path, &state)
 	if err != nil {
 		return nil, wrapNotFound(id, err)
-	}
-	defer f.Close()
-
-	var state State
-	if err := json.NewDecoder(f).Decode(&state); err != nil {
-		return nil, err
 	}
 
 	return &state, nil

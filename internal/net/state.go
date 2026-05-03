@@ -1,11 +1,10 @@
 package net
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 
 	"github.com/aayushkdev/crate/internal/image"
+	filestate "github.com/aayushkdev/crate/internal/state"
 )
 
 type State struct {
@@ -33,14 +32,8 @@ func logPath(containerID string) string {
 }
 
 func readState(containerID string) (*State, error) {
-	f, err := os.Open(statePath(containerID))
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	var state State
-	if err := json.NewDecoder(f).Decode(&state); err != nil {
+	if err := filestate.Read(statePath(containerID), &state); err != nil {
 		return nil, err
 	}
 
@@ -48,23 +41,5 @@ func readState(containerID string) (*State, error) {
 }
 
 func writeState(containerID string, state *State) error {
-	path := statePath(containerID)
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	tmp := path + ".tmp"
-	f, err := os.Create(tmp)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(state); err != nil {
-		return err
-	}
-
-	return os.Rename(tmp, path)
+	return filestate.Write(statePath(containerID), state)
 }
