@@ -5,29 +5,14 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
+
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
-func CrateRoot() string {
-	var home string
-	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
-		u, err := user.Lookup(sudoUser)
-		if err == nil {
-			home = u.HomeDir
-		}
-	}
-	if home == "" {
-		h, _ := os.UserHomeDir()
-		home = h
-	}
-
-	return filepath.Join(home, ".local", "share", "crate")
-}
-
 func BlobPath(digest string) (string, error) {
-	root := CrateRoot()
+	root := storage.CrateRoot()
 	parts := strings.SplitN(digest, ":", 2)
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid digest: %s", digest)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/aayushkdev/crate/internal/image"
 	cratenet "github.com/aayushkdev/crate/internal/net"
-	filestate "github.com/aayushkdev/crate/internal/state"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 type Config struct {
@@ -33,11 +33,11 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 	}
 	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
 
-	if err := os.MkdirAll(filestate.ContainerDir(id), 0755); err != nil {
+	if err := os.MkdirAll(storage.ContainerDir(id), 0755); err != nil {
 		return err
 	}
 
-	return filestate.Write(filestate.ContainerConfigPath(id), &cfg)
+	return storage.Write(storage.ContainerConfigPath(id), &cfg)
 }
 
 func primaryRepoTag(meta *image.ImageMetadata) string {
@@ -50,7 +50,7 @@ func primaryRepoTag(meta *image.ImageMetadata) string {
 
 func ReadConfig(id string) (*Config, error) {
 	var cfg Config
-	err := filestate.Read(filestate.ContainerConfigPath(id), &cfg)
+	err := storage.Read(storage.ContainerConfigPath(id), &cfg)
 	if err != nil {
 		return nil, wrapNotFound(id, err)
 	}

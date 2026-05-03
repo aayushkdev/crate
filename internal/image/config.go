@@ -1,14 +1,13 @@
 package image
 
 import (
-	"encoding/json"
-	"os"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 type ImageConfig struct {
 	Architecture string `json:"architecture"`
 	OS           string `json:"os"`
-	Config struct {
+	Config       struct {
 		Cmd        []string `json:"Cmd"`
 		Env        []string `json:"Env"`
 		WorkingDir string   `json:"WorkingDir"`
@@ -23,14 +22,8 @@ func ReadImageConfig(digest string) (*ImageConfig, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	var cfg ImageConfig
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+	if err := storage.Read(path, &cfg); err != nil {
 		return nil, err
 	}
 

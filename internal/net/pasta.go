@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	filestate "github.com/aayushkdev/crate/internal/state"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 func Setup(containerID string, pid int, cfg Config) error {
@@ -22,7 +22,7 @@ func Setup(containerID string, pid int, cfg Config) error {
 		return nil
 	}
 
-	if err := prepareRootfsFiles(filestate.ContainerRootfsPath(containerID)); err != nil {
+	if err := prepareRootfsFiles(storage.ContainerRootfsPath(containerID)); err != nil {
 		return err
 	}
 
@@ -44,12 +44,12 @@ func Setup(containerID string, pid int, cfg Config) error {
 		return err
 	}
 
-	if err := filestate.WriteNetwork(containerID, &filestate.Network{
+	if err := writeState(containerID, &State{
 		Mode:          string(cfg.Mode),
 		Backend:       "pasta",
 		HelperPID:     cmd.Process.Pid,
 		InterfaceName: cfg.InterfaceName,
-		LogPath:       filestate.NetworkLogPath(containerID),
+		LogPath:       storage.NetworkLogPath(containerID),
 	}); err != nil {
 		_ = cmd.Process.Kill()
 		return err
@@ -64,7 +64,7 @@ func Setup(containerID string, pid int, cfg Config) error {
 }
 
 func Teardown(containerID string) error {
-	state, err := filestate.ReadNetwork(containerID)
+	state, err := readState(containerID)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -79,11 +79,11 @@ func Teardown(containerID string) error {
 		}
 	}
 
-	return filestate.RemoveNetwork(containerID)
+	return removeState(containerID)
 }
 
 func openLogFile(containerID string) (*os.File, error) {
-	path := filestate.NetworkLogPath(containerID)
+	path := storage.NetworkLogPath(containerID)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return nil, err
 	}
@@ -106,8 +106,4 @@ func waitForHelper(cmd *exec.Cmd, timeout time.Duration) error {
 	case <-time.After(timeout):
 		return nil
 	}
-}
-
-func removeState(containerID string) error {
-	return filestate.RemoveNetwork(containerID)
 }

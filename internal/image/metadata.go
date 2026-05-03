@@ -1,12 +1,13 @@
 package image
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 type ImageMetadata struct {
@@ -27,7 +28,7 @@ func imageMetaPathByDigest(digest string) (string, error) {
 		return "", fmt.Errorf("invalid digest: %s", digest)
 	}
 
-	root := CrateRoot()
+	root := storage.CrateRoot()
 	return filepath.Join(root, "images", digest), nil
 }
 
@@ -96,19 +97,7 @@ func writeMetadataByDigest(meta *ImageMetadata) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(meta)
+	return storage.Write(path, meta)
 }
 
 func deleteMetadataByDigest(digest string) error {
@@ -146,14 +135,8 @@ func readMetadataByDigest(digest string) (*ImageMetadata, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	var meta ImageMetadata
-	if err := json.NewDecoder(f).Decode(&meta); err != nil {
+	if err := storage.Read(path, &meta); err != nil {
 		return nil, err
 	}
 
@@ -161,7 +144,7 @@ func readMetadataByDigest(digest string) (*ImageMetadata, error) {
 }
 
 func readAllMetadata() ([]*ImageMetadata, error) {
-	root := filepath.Join(CrateRoot(), "images")
+	root := filepath.Join(storage.CrateRoot(), "images")
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -187,14 +170,8 @@ func readAllMetadata() ([]*ImageMetadata, error) {
 }
 
 func readMetadataFile(path string) (*ImageMetadata, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	var meta ImageMetadata
-	if err := json.NewDecoder(f).Decode(&meta); err != nil {
+	if err := storage.Read(path, &meta); err != nil {
 		return nil, err
 	}
 

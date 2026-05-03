@@ -10,11 +10,11 @@ import (
 
 	"github.com/aayushkdev/crate/internal/fs"
 	"github.com/aayushkdev/crate/internal/image"
-	filestate "github.com/aayushkdev/crate/internal/state"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 func removeContainerDir(id string) error {
-	return os.RemoveAll(filestate.ContainerDir(id))
+	return os.RemoveAll(storage.ContainerDir(id))
 }
 
 func generateID() string {
@@ -45,7 +45,7 @@ func Create(imageName string) (string, error) {
 
 	id := generateID()
 
-	rootfs := filestate.ContainerRootfsPath(id)
+	rootfs := storage.ContainerRootfsPath(id)
 	if err := os.MkdirAll(rootfs, 0755); err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func Create(imageName string) (string, error) {
 		ID:        id,
 		Image:     familiarRef(ref),
 		Status:    StatusCreated,
-		LogPath:   filestate.ContainerLogPath(id),
+		LogPath:   storage.ContainerLogPath(id),
 		CreatedAt: time.Now().UTC(),
 	}); err != nil {
 		return "", err

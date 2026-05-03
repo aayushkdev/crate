@@ -3,14 +3,12 @@ package container
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/aayushkdev/crate/internal/image"
-	filestate "github.com/aayushkdev/crate/internal/state"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 type Status string
@@ -49,16 +47,16 @@ type Summary struct {
 }
 
 func LogPath(id string) string {
-	return filestate.ContainerLogPath(id)
+	return storage.ContainerLogPath(id)
 }
 
 func writeState(id string, state *State) error {
-	return filestate.Write(filestate.ContainerStatePath(id), state)
+	return storage.Write(storage.ContainerStatePath(id), state)
 }
 
 func ReadState(id string) (*State, error) {
 	var state State
-	err := filestate.Read(filestate.ContainerStatePath(id), &state)
+	err := storage.Read(storage.ContainerStatePath(id), &state)
 	if err != nil {
 		return nil, wrapNotFound(id, err)
 	}
@@ -108,7 +106,7 @@ func RefreshState(id string) (*State, error) {
 }
 
 func ListSummaries() ([]Summary, error) {
-	root := filepath.Join(image.CrateRoot(), "containers")
+	root := storage.ContainersDir()
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		if os.IsNotExist(err) {

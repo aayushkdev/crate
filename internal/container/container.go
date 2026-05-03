@@ -9,7 +9,7 @@ import (
 
 	"github.com/aayushkdev/crate/internal/fs"
 	cratenet "github.com/aayushkdev/crate/internal/net"
-	filestate "github.com/aayushkdev/crate/internal/state"
+	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 func InitContainer(containerID string, command []string) {
@@ -18,7 +18,7 @@ func InitContainer(containerID string, command []string) {
 	cfg, err := ReadConfig(containerID)
 	Fatal(err)
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
-	rootfs := filestate.ContainerRootfsPath(containerID)
+	rootfs := storage.ContainerRootfsPath(containerID)
 
 	Fatal(syscall.Sethostname([]byte("crate")))
 
