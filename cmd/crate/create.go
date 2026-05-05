@@ -8,6 +8,8 @@ import (
 	"github.com/aayushkdev/crate/internal/container"
 )
 
+var createUser string
+
 var createCmd = &cobra.Command{
 	Use:   "create IMAGE",
 	Short: "Create a container",
@@ -15,7 +17,9 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		image := args[0]
 
-		id, err := container.Create(image)
+		id, err := container.Create(image, container.CreateOptions{
+			User: createUser,
+		})
 		if err != nil {
 			return err
 		}
@@ -26,5 +30,6 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
+	createCmd.Flags().StringVar(&createUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	rootCmd.AddCommand(createCmd)
 }

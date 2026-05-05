@@ -50,6 +50,10 @@ Creates a container from an image and prints the container ID.
 crate create alpine
 ```
 
+```bash
+crate create --user nginx nginx
+```
+
 ---
 
 ### Start a container
@@ -96,6 +100,10 @@ crate run alpine /bin/sh -c "echo hello world"
 
 ```bash
 crate run -d alpine
+```
+
+```bash
+crate run --user redis redis
 ```
 
 ---
@@ -204,13 +212,9 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 ### Networking
 
 * Host, private, and disabled networking modes
-* Private network namespaces created with `CLONE_NEWNET`
 * Rootless private networking via `pasta`
-* Loopback brought up inside isolated network namespaces
-* `/etc/hosts` and `/etc/resolv.conf` copied into the container rootfs
-* Parent/child synchronization so workloads start after network setup
+* Loopback and resolver setup in isolated namespaces
 * Automatic fallback from private networking to disabled networking when `pasta` is unavailable
-* Network helper lifecycle tracking and teardown
 
 
 ## Far off goals (for now)
@@ -223,4 +227,4 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 
 ## Notes
 
-In rootless mode, privilege-drop flows inside the container do not work. Switching from container root to another user/group after startup with tools like `setpriv`, `su`, or similar mechanisms fails because unprivileged GID mapping requires disabling `setgroups(2)`.
+In rootless mode, privilege-drop flows inside the container do not work reliably. Switching from container root to another user/group after startup with tools like `setpriv`, `su`, or similar mechanisms can fail because unprivileged GID mapping requires disabling `setgroups(2)`. Prefer the image's `USER` or `crate run --user ...` when the image can start directly as its final service user.

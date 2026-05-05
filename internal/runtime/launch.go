@@ -27,6 +27,9 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	if warning != "" {
 		fmt.Fprintf(os.Stderr, "crate: warning: %s\n", warning)
 	}
+	if warning := container.RootlessUserWarning(cfg); warning != "" {
+		fmt.Fprintf(os.Stderr, "crate: warning: %s\n", warning)
+	}
 
 	logPath := container.LogPath(containerID)
 	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {

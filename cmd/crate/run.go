@@ -5,10 +5,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/aayushkdev/crate/internal/container"
 	"github.com/aayushkdev/crate/internal/runtime"
 )
 
 var runDetach bool
+var runUser string
 
 var runCmd = &cobra.Command{
 	Use:   "run [OPTIONS] IMAGE [COMMAND] [ARG...]",
@@ -18,7 +20,9 @@ var runCmd = &cobra.Command{
 		image := args[0]
 		command := args[1:]
 
-		containerID, err := runtime.Run(image, command, runDetach)
+		containerID, err := runtime.Run(image, command, runDetach, container.CreateOptions{
+			User: runUser,
+		})
 		if err != nil {
 			return err
 		}
@@ -34,5 +38,6 @@ var runCmd = &cobra.Command{
 func init() {
 	runCmd.Flags().SetInterspersed(false)
 	runCmd.Flags().BoolVarP(&runDetach, "detach", "d", false, "Run the container in the background")
+	runCmd.Flags().StringVar(&runUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	rootCmd.AddCommand(runCmd)
 }

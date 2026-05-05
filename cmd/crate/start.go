@@ -9,6 +9,7 @@ import (
 )
 
 var startDetach bool
+var startUser string
 
 var startCmd = &cobra.Command{
 	Use:   "start CONTAINER [COMMAND] [ARG...]",
@@ -18,7 +19,7 @@ var startCmd = &cobra.Command{
 		containerID := args[0]
 		command := args[1:]
 
-		if err := runtime.Start(containerID, command, startDetach); err != nil {
+		if err := runtime.Start(containerID, command, startDetach, startUser); err != nil {
 			return err
 		}
 
@@ -33,5 +34,6 @@ var startCmd = &cobra.Command{
 func init() {
 	startCmd.Flags().SetInterspersed(false)
 	startCmd.Flags().BoolVarP(&startDetach, "detach", "d", false, "Run the container in the background")
+	startCmd.Flags().StringVar(&startUser, "user", "", "Override the configured user for this start")
 	rootCmd.AddCommand(startCmd)
 }

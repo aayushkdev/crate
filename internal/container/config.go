@@ -15,10 +15,11 @@ type Config struct {
 	Cmd        []string        `json:"cmd,omitempty"`
 	Env        []string        `json:"env,omitempty"`
 	EntryPoint []string        `json:"entrypoint,omitempty"`
+	User       string          `json:"user,omitempty"`
 	Network    cratenet.Config `json:"network,omitempty"`
 }
 
-func writeConfig(id string, meta *image.ImageMetadata) error {
+func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error {
 	imgCfg, err := image.ReadImageConfig(meta.ConfigDigest)
 	if err != nil {
 		return err
@@ -30,6 +31,10 @@ func writeConfig(id string, meta *image.ImageMetadata) error {
 		Cmd:        imgCfg.Config.Cmd,
 		Env:        imgCfg.Config.Env,
 		EntryPoint: imgCfg.Config.Entrypoint,
+		User:       imgCfg.Config.User,
+	}
+	if opts.User != "" {
+		cfg.User = opts.User
 	}
 	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
 

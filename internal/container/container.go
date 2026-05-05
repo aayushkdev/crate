@@ -11,7 +11,6 @@ import (
 	"github.com/aayushkdev/crate/internal/fs"
 	cratenet "github.com/aayushkdev/crate/internal/net"
 	storage "github.com/aayushkdev/crate/internal/storage"
-	"golang.org/x/sys/unix"
 )
 
 const initMappedEnv = "CRATE_INIT_MAPPED"
@@ -39,9 +38,7 @@ func InitContainer(containerID string, command []string) {
 	if cfg.Network.Mode == cratenet.ModePrivate {
 		Fatal(cratenet.WaitForInterface(cfg.Network.InterfaceName, 5*time.Second))
 	}
-	if cfg.Rootless {
-		Fatal(dropRootlessPrivDropCaps())
-	}
+	Fatal(ApplyUser(cfg.User))
 
 	if len(command) == 0 {
 		command = cfg.Cmd
@@ -73,19 +70,6 @@ func reexecMappedInit(containerID string, command []string) error {
 	env = append(env, initMappedEnv+"=1")
 
 	return syscall.Exec("/proc/self/exe", argv, env)
-}
-
-func dropRootlessPrivDropCaps() error {
-	// Rootless user namespaces require setgroups(2) to stay disabled once the
-	// GID map is installed. Drop the related caps before exec so image
-	// entrypoints do not try a privilege-drop path that the kernel will reject.
-	for _, cap := range []uintptr{unix.CAP_SETUID, unix.CAP_SETGID} {
-		if err := unix.Prctl(unix.PR_CAPBSET_DROP, cap, 0, 0, 0); err != nil {
-			return fmt.Errorf("drop capability %d from bounding set: %w", cap, err)
-		}
-	}
-
-	return nil
 }
 
 func Fatal(err error) {

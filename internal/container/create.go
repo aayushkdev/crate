@@ -13,6 +13,10 @@ import (
 	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
+type CreateOptions struct {
+	User string
+}
+
 func removeContainerDir(id string) error {
 	return os.RemoveAll(storage.ContainerDir(id))
 }
@@ -25,7 +29,7 @@ func generateID() string {
 	return hex.EncodeToString(b)
 }
 
-func Create(imageName string) (string, error) {
+func Create(imageName string, opts CreateOptions) (string, error) {
 	ref, err := image.ParseReference(imageName)
 	if err != nil {
 		return "", err
@@ -60,7 +64,7 @@ func Create(imageName string) (string, error) {
 		}
 	}
 
-	if err := writeConfig(id, meta); err != nil {
+	if err := writeConfig(id, meta, opts); err != nil {
 		return "", err
 	}
 
