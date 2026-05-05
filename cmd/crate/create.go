@@ -8,6 +8,7 @@ import (
 	"github.com/aayushkdev/crate/internal/container"
 )
 
+var createPublish []string
 var createUser string
 
 var createCmd = &cobra.Command{
@@ -17,8 +18,14 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		image := args[0]
 
+		publish, err := parsePublishedPorts(createPublish)
+		if err != nil {
+			return err
+		}
+
 		id, err := container.Create(image, container.CreateOptions{
-			User: createUser,
+			Publish: publish,
+			User:    createUser,
 		})
 		if err != nil {
 			return err
@@ -30,6 +37,7 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
+	createCmd.Flags().StringArrayVarP(&createPublish, "publish", "p", nil, "Publish a container port to the host (HOST:CONTAINER[/tcp|udp])")
 	createCmd.Flags().StringVar(&createUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	rootCmd.AddCommand(createCmd)
 }

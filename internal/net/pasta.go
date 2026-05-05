@@ -34,9 +34,7 @@ func Setup(containerID string, pid int, cfg Config) error {
 
 	cmd := exec.Command(
 		"pasta",
-		"--config-net",
-		"--ns-ifname", cfg.InterfaceName,
-		strconv.Itoa(pid),
+		pastaArgs(pid, cfg)...,
 	)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -50,6 +48,7 @@ func Setup(containerID string, pid int, cfg Config) error {
 		HelperPID:     cmd.Process.Pid,
 		InterfaceName: cfg.InterfaceName,
 		LogPath:       storage.NetworkLogPath(containerID),
+		Publish:       append([]PublishedPort(nil), cfg.Publish...),
 	}); err != nil {
 		_ = cmd.Process.Kill()
 		return err
@@ -61,6 +60,30 @@ func Setup(containerID string, pid int, cfg Config) error {
 	}
 
 	return nil
+}
+
+func pastaArgs(pid int, cfg Config) []string {
+	args := []string{
+		"--config-net",
+		"--ns-ifname", cfg.InterfaceName,
+	}
+
+	if len(cfg.Publish) > 0 {
+		tcpSpec := PastaPortSpec(cfg.Publish, "tcp")
+		if tcpSpec == "" {
+			tcpSpec = "none"
+		}
+		args = append(args, "-t", tcpSpec)
+
+		udpSpec := PastaPortSpec(cfg.Publish, "udp")
+		if udpSpec == "" {
+			udpSpec = "none"
+		}
+		args = append(args, "-u", udpSpec)
+	}
+
+	args = append(args, strconv.Itoa(pid))
+	return args
 }
 
 func Teardown(containerID string) error {

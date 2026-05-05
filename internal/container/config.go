@@ -37,6 +37,7 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		cfg.User = opts.User
 	}
 	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
+	cfg.Network.Publish = append(cfg.Network.Publish, opts.Publish...)
 
 	if err := os.MkdirAll(storage.ContainerDir(id), 0755); err != nil {
 		return err

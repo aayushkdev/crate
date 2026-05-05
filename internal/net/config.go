@@ -1,6 +1,10 @@
 package net
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 type Mode string
 
@@ -16,10 +20,17 @@ const (
 )
 
 type Config struct {
-	Mode          Mode   `json:"mode,omitempty"`
-	Adapter       string `json:"adapter,omitempty"`
-	Backend       string `json:"backend,omitempty"`
-	InterfaceName string `json:"interface_name,omitempty"`
+	Mode          Mode            `json:"mode,omitempty"`
+	Adapter       string          `json:"adapter,omitempty"`
+	Backend       string          `json:"backend,omitempty"`
+	InterfaceName string          `json:"interface_name,omitempty"`
+	Publish       []PublishedPort `json:"publish,omitempty"`
+}
+
+type PublishedPort struct {
+	HostPort      int    `json:"host_port"`
+	ContainerPort int    `json:"container_port"`
+	Protocol      string `json:"protocol,omitempty"`
 }
 
 func DefaultConfig(rootless bool) Config {
@@ -60,6 +71,9 @@ func NormalizeConfig(cfg Config, rootless bool) Config {
 func ValidateConfig(cfg Config, rootless bool) error {
 	switch cfg.Mode {
 	case ModeHost, ModeNone:
+		if len(cfg.Publish) > 0 {
+			return fmt.Errorf("port publishing requires private networking")
+		}
 		return nil
 	case ModePrivate:
 		if !rootless {
@@ -70,6 +84,9 @@ func ValidateConfig(cfg Config, rootless bool) error {
 		}
 		if cfg.Backend != "pasta" {
 			return fmt.Errorf("unsupported network backend %q", cfg.Backend)
+		}
+		if err := ValidatePublishedPorts(cfg.Publish); err != nil {
+			return err
 		}
 		return nil
 	default:
@@ -83,4 +100,51 @@ func RequiresNetNS(cfg Config) bool {
 
 func RequiresHelper(cfg Config) bool {
 	return cfg.Mode == ModePrivate
+}
+
+func ValidatePublishedPorts(ports []PublishedPort) error {
+	seen := map[string]struct{}{}
+	for _, port := range ports {
+		if port.HostPort < 1 || port.HostPort > 65535 {
+			return fmt.Errorf("invalid host port %d", port.HostPort)
+		}
+		if port.ContainerPort < 1 || port.ContainerPort > 65535 {
+			return fmt.Errorf("invalid container port %d", port.ContainerPort)
+		}
+
+		protocol := port.Protocol
+		if protocol == "" {
+			protocol = "tcp"
+		}
+		switch protocol {
+		case "tcp", "udp":
+		default:
+			return fmt.Errorf("unsupported publish protocol %q", port.Protocol)
+		}
+
+		key := protocol + ":" + strconv.Itoa(port.HostPort)
+		if _, exists := seen[key]; exists {
+			return fmt.Errorf("duplicate published %s port %d", protocol, port.HostPort)
+		}
+		seen[key] = struct{}{}
+	}
+
+	return nil
+}
+
+func PastaPortSpec(ports []PublishedPort, protocol string) string {
+	specs := make([]string, 0, len(ports))
+	for _, port := range ports {
+		publishProtocol := port.Protocol
+		if publishProtocol == "" {
+			publishProtocol = "tcp"
+		}
+		if publishProtocol != protocol {
+			continue
+		}
+
+		specs = append(specs, strconv.Itoa(port.HostPort)+":"+strconv.Itoa(port.ContainerPort))
+	}
+
+	return strings.Join(specs, ",")
 }

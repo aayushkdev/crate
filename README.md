@@ -103,6 +103,10 @@ crate run -d alpine
 ```
 
 ```bash
+crate run -d -p 12345:80 nginx
+```
+
+```bash
 crate run --user redis redis
 ```
 
@@ -213,6 +217,7 @@ If removing a tag leaves a manifest untagged, Crate deletes that manifest metada
 
 * Host, private, and disabled networking modes
 * Rootless private networking via `pasta`
+* TCP/UDP host port publishing
 * Loopback and resolver setup in isolated namespaces
 * Automatic fallback from private networking to disabled networking when `pasta` is unavailable
 

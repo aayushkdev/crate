@@ -10,11 +10,13 @@ import (
 
 	"github.com/aayushkdev/crate/internal/fs"
 	"github.com/aayushkdev/crate/internal/image"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
 type CreateOptions struct {
-	User string
+	Publish []cratenet.PublishedPort
+	User    string
 }
 
 func removeContainerDir(id string) error {

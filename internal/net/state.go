@@ -7,11 +7,12 @@ import (
 )
 
 type State struct {
-	Mode          string `json:"mode,omitempty"`
-	Backend       string `json:"backend"`
-	HelperPID     int    `json:"helper_pid"`
-	InterfaceName string `json:"interface_name"`
-	LogPath       string `json:"log_path,omitempty"`
+	Mode          string          `json:"mode,omitempty"`
+	Backend       string          `json:"backend"`
+	HelperPID     int             `json:"helper_pid"`
+	InterfaceName string          `json:"interface_name"`
+	LogPath       string          `json:"log_path,omitempty"`
+	Publish       []PublishedPort `json:"publish,omitempty"`
 }
 
 func readState(containerID string) (*State, error) {

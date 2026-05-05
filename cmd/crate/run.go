@@ -10,6 +10,7 @@ import (
 )
 
 var runDetach bool
+var runPublish []string
 var runUser string
 
 var runCmd = &cobra.Command{
@@ -20,8 +21,14 @@ var runCmd = &cobra.Command{
 		image := args[0]
 		command := args[1:]
 
+		publish, err := parsePublishedPorts(runPublish)
+		if err != nil {
+			return err
+		}
+
 		containerID, err := runtime.Run(image, command, runDetach, container.CreateOptions{
-			User: runUser,
+			Publish: publish,
+			User:    runUser,
 		})
 		if err != nil {
 			return err
@@ -38,6 +45,7 @@ var runCmd = &cobra.Command{
 func init() {
 	runCmd.Flags().SetInterspersed(false)
 	runCmd.Flags().BoolVarP(&runDetach, "detach", "d", false, "Run the container in the background")
+	runCmd.Flags().StringArrayVarP(&runPublish, "publish", "p", nil, "Publish a container port to the host (HOST:CONTAINER[/tcp|udp])")
 	runCmd.Flags().StringVar(&runUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	rootCmd.AddCommand(runCmd)
 }
