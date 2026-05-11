@@ -63,7 +63,7 @@ func RootlessUserWarning(cfg *Config) string {
 	if !cfg.Rootless {
 		return ""
 	}
-	if cfg.User == "" || cfg.User == "0" || cfg.User == "root" || strings.HasPrefix(cfg.User, "0:") || strings.HasPrefix(cfg.User, "root:") {
+	if IsRootUserSpec(cfg.User) {
 		return fmt.Sprintf(
 			"image %q starts as root in rootless mode; privilege-drop entrypoints may fail after startup because setgroups(2) is disabled. Try --user if the image can start as its final service user",
 			cfg.Image,
@@ -71,6 +71,10 @@ func RootlessUserWarning(cfg *Config) string {
 	}
 
 	return ""
+}
+
+func IsRootUserSpec(spec string) bool {
+	return spec == "" || spec == "0" || spec == "root" || strings.HasPrefix(spec, "0:") || strings.HasPrefix(spec, "root:")
 }
 
 func splitUserSpec(spec string) (string, string) {
