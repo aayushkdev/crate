@@ -11,6 +11,7 @@ func Remove(id string) error {
 	if err != nil {
 		return err
 	}
+	id = state.ID
 
 	if state.Status == StatusRunning || state.Status == StatusStopping {
 		return fmt.Errorf("container %s is running; stop it first", id)

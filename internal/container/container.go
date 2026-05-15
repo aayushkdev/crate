@@ -29,7 +29,8 @@ func InitContainer(containerID string, command []string) {
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := storage.ContainerRootfsPath(containerID)
 
-	Fatal(syscall.Sethostname([]byte("crate")))
+	hostname := clampHostname(cfg.Name)
+	Fatal(syscall.Sethostname([]byte(hostname)))
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
 	if cfg.Network.Mode == cratenet.ModeNone || cfg.Network.Mode == cratenet.ModePrivate {

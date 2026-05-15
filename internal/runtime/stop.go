@@ -15,6 +15,7 @@ func Stop(containerID string) error {
 	if err != nil {
 		return err
 	}
+	containerID = state.ID
 
 	if state.Status != container.StatusRunning && state.Status != container.StatusStopping {
 		return fmt.Errorf("container %s is not running", containerID)

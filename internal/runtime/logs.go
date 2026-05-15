@@ -9,11 +9,11 @@ import (
 )
 
 func Logs(containerID string, follow bool, stdout io.Writer) error {
-	logPath := container.LogPath(containerID)
 	state, err := container.RefreshState(containerID)
 	if err != nil {
 		return err
 	}
+	logPath := container.LogPath(state.ID)
 
 	var offset int64
 	for {

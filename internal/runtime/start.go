@@ -7,6 +7,7 @@ func Start(containerID string, command []string, detach bool, user string) error
 	if err != nil {
 		return err
 	}
+	containerID = cfg.ID
 	if user != "" {
 		cfg.User = user
 	}

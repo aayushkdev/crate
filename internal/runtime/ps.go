@@ -16,7 +16,7 @@ func PS(stdout io.Writer, all bool) error {
 	}
 
 	w := tabwriter.NewWriter(stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "CONTAINER\tIMAGE\tSTATUS\tPID\tCOMMAND")
+	fmt.Fprintln(w, "CONTAINER\tNAME\tIMAGE\tSTATUS\tPID\tCOMMAND")
 	for _, summary := range summaries {
 		if !all && summary.Status != container.StatusRunning {
 			continue
@@ -26,11 +26,16 @@ func PS(stdout io.Writer, all bool) error {
 		if command == "" {
 			command = "-"
 		}
+		name := strings.TrimSpace(summary.Name)
+		if name == "" {
+			name = "-"
+		}
 
 		fmt.Fprintf(
 			w,
-			"%s\t%s\t%s\t%d\t%s\n",
+			"%s\t%s\t%s\t%s\t%d\t%s\n",
 			summary.ID,
+			name,
 			summary.Image,
 			formatSummaryStatus(summary),
 			summary.PID,

@@ -20,6 +20,9 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	if err != nil {
 		return err
 	}
+	if cfg.ID != "" {
+		containerID = cfg.ID
+	}
 
 	netCfg, warning, err := cratenet.ResolveRuntimeConfig(cfg.Network, cfg.Rootless)
 	if err != nil {
@@ -95,6 +98,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 
 	state := &container.State{
 		ID:          containerID,
+		Name:        cfg.Name,
 		Image:       cfg.Image,
 		Command:     argv,
 		Status:      container.StatusRunning,

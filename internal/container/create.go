@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aayushkdev/crate/internal/fs"
@@ -17,7 +18,10 @@ import (
 type CreateOptions struct {
 	Publish []cratenet.PublishedPort
 	User    string
+	Name    string
 }
+
+var createMu sync.Mutex
 
 func removeContainerDir(id string) error {
 	return os.RemoveAll(storage.ContainerDir(id))
@@ -32,6 +36,8 @@ func generateID() string {
 }
 
 func Create(imageName string, opts CreateOptions) (string, error) {
+	createMu.Lock()
+	defer createMu.Unlock()
 	ref, err := image.ParseReference(imageName)
 	if err != nil {
 		return "", err
@@ -50,6 +56,11 @@ func Create(imageName string, opts CreateOptions) (string, error) {
 	}
 
 	id := generateID()
+	name, err := resolveContainerName(opts.Name)
+	if err != nil {
+		return "", err
+	}
+	opts.Name = name
 
 	rootfs := storage.ContainerRootfsPath(id)
 	if err := os.MkdirAll(rootfs, 0755); err != nil {
@@ -72,6 +83,7 @@ func Create(imageName string, opts CreateOptions) (string, error) {
 
 	if err := writeState(id, &State{
 		ID:        id,
+		Name:      name,
 		Image:     familiarRef(ref),
 		Status:    StatusCreated,
 		LogPath:   storage.ContainerLogPath(id),

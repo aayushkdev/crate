@@ -24,6 +24,7 @@ const (
 
 type State struct {
 	ID          string    `json:"id"`
+	Name        string    `json:"name"`
 	Image       string    `json:"image"`
 	Command     []string  `json:"command,omitempty"`
 	Status      Status    `json:"status"`
@@ -39,6 +40,7 @@ type State struct {
 
 type Summary struct {
 	ID       string
+	Name     string
 	Image    string
 	Status   Status
 	PID      int
@@ -55,6 +57,11 @@ func writeState(id string, state *State) error {
 }
 
 func ReadState(id string) (*State, error) {
+	if resolved, ok, err := resolveContainerID(id); err != nil {
+		return nil, err
+	} else if ok {
+		id = resolved
+	}
 	var state State
 	err := storage.Read(storage.ContainerStatePath(id), &state)
 	if err != nil {
@@ -71,7 +78,7 @@ func UpdateState(id string, update func(*State)) error {
 	}
 
 	update(state)
-	return writeState(id, state)
+	return writeState(state.ID, state)
 }
 
 func ProcessAlive(pid int) bool {
@@ -129,6 +136,7 @@ func ListSummaries() ([]Summary, error) {
 
 		summaries = append(summaries, Summary{
 			ID:       state.ID,
+			Name:     state.Name,
 			Image:    state.Image,
 			Status:   state.Status,
 			PID:      state.PID,

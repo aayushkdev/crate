@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	ID         string          `json:"id"`
+	Name       string          `json:"name,omitempty"`
 	Image      string          `json:"image"`
 	Rootless   bool            `json:"rootless"`
 	Cmd        []string        `json:"cmd,omitempty"`
@@ -26,6 +27,7 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 	}
 	cfg := Config{
 		ID:         id,
+		Name:       opts.Name,
 		Image:      primaryRepoTag(meta),
 		Rootless:   os.Geteuid() != 0,
 		Cmd:        imgCfg.Config.Cmd,
@@ -55,6 +57,11 @@ func primaryRepoTag(meta *image.ImageMetadata) string {
 }
 
 func ReadConfig(id string) (*Config, error) {
+	if resolved, ok, err := resolveContainerID(id); err != nil {
+		return nil, err
+	} else if ok {
+		id = resolved
+	}
 	var cfg Config
 	err := storage.Read(storage.ContainerConfigPath(id), &cfg)
 	if err != nil {
