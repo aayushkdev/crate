@@ -42,6 +42,7 @@ Crate persists container lifecycle data in [`internal/container/state.go`](../in
 // internal/container/state.go
 type State struct {
     ID         string    `json:"id"`
+    Name       string    `json:"name"`
     Image      string    `json:"image"`
     Command    []string  `json:"command,omitempty"`
     Status     Status    `json:"status"`
@@ -123,6 +124,7 @@ state, err := RefreshState(id)
 if err != nil {
     return err
 }
+id = state.ID // resolved from name if a name was given
 
 if state.Status == StatusRunning || state.Status == StatusStopping {
     return fmt.Errorf("container %s is running; stop it first", id)
@@ -130,6 +132,8 @@ if state.Status == StatusRunning || state.Status == StatusStopping {
 
 return removeContainerDir(id)
 ```
+
+All lifecycle commands (`start`, `stop`, `logs`, `rm`, `ps`) resolve names to IDs internally via `resolveContainerID`. The function first scans every container's config for a matching `Name`, then falls back to hex-ID matching — so a name like `my-container` can be used anywhere an ID is accepted.
 
 > Under the Hood
 >

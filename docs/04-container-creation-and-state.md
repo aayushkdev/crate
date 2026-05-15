@@ -77,6 +77,7 @@ Creation also snapshots runtime defaults from the image config blob:
 // internal/container/config.go
 cfg := Config{
     ID:         id,
+    Name:       opts.Name, // human-readable name or auto-generated
     Image:      primaryRepoTag(meta), // first local tag recorded for this manifest
     Rootless:   os.Geteuid() != 0, // launch policy captured at create time
     Cmd:        imgCfg.Config.Cmd,
@@ -91,6 +92,7 @@ Finally, Crate writes the first lifecycle record:
 // internal/container/create.go
 if err := writeState(id, &State{
     ID:        id,
+    Name:      name,
     Image:     familiarRef(ref),
     Status:    StatusCreated,
     LogPath:   LogPath(id),
@@ -123,13 +125,25 @@ echo "$id"
 
 Then inspect the container directory under Crate's data root. Look at `rootfs`, `config.json`, and `state.json` before ever calling `start`.
 
+Containers can be assigned a name with `--name`:
+
+```sh
+go run ./cmd/crate create --name my-alpine alpine
+```
+
+Once named, the container can be referenced by name in subsequent commands (`start`, `stop`, `logs`, `rm`, `ps`) instead of its hex ID. Internally, `resolveContainerID` scans all container configs for a matching `Name` before falling back to hex-ID parsing.
+
 After stopping the container, try:
 
 ```sh
 go run ./cmd/crate rm "$id"
 ```
 
-and confirm that the container directory disappears.
+and confirm that the container directory disappears. The same works by name:
+
+```sh
+go run ./cmd/crate rm my-alpine
+```
 
 ## Key Takeaways
 

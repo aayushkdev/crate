@@ -7,174 +7,52 @@ It launches containers directly, persists runtime state on disk instead of relyi
 
 ## Getting started
 
-Install using (Go 1.20+ recommended):
+Requires Go 1.20+.
+
+```bash
+git clone https://github.com/aayushkdev/crate.git
+cd crate
+go build -o crate ./cmd/crate/
+mv crate ~/.local/share/bin/   # or any directory in your PATH
+```
+
+Or directly:
+
 ```bash
 go install github.com/aayushkdev/crate/cmd/crate@latest
 ```
-(ensure `GOBIN` is in path)
 
-Verify installation:
-```bash
-crate --help
-```
-
+(ensure `GOBIN` is in your `PATH`)
 
 ## Usage
 
-### Pull an image
+| Command | Description |
+|---------|-------------|
+| `crate pull <image>` | Pull an image from a registry |
+| `crate images` | List local images |
+| `crate run [--name] [--user] [-p] [-d] <image> [cmd]` | Create and start a container |
+| `crate create [--name] [--user] [-p] <image>` | Create a container (without starting) |
+| `crate start <container> [cmd]` | Start an existing container |
+| `crate ps [-a]` | List running containers (use `-a` for all) |
+| `crate stop <container>...` | Stop running containers |
+| `crate rm <container>...` | Remove stopped containers |
+| `crate logs [-f] <container>` | View container logs |
+| `crate rmi <image>...` | Remove local image tags |
 
-Pulls an image from a registry and stores it in the local image store.
 
-```bash
-crate pull alpine
-```
-Crate resolves the tag on each pull and skips blob work when the resolved manifest digest is already present locally.
 
----
+Containers can be referenced by name or ID. Crate resolves names by scanning container configs for a matching `Name` before falling back to hex-ID matching.
 
-### List images
-
-Lists local images from the manifest-backed metadata store.
-
-```bash
-crate images
-```
-
----
-
-### Create a container
-
-Creates a container from an image and prints the container ID.
+Typical workflow:
 
 ```bash
-crate create alpine
-```
-
-```bash
-crate create --user nginx nginx
-```
-
----
-
-### Start a container
-
-Starts an existing container by ID.
-
-```bash
-crate start <CONTAINER_ID> [COMMAND] [ARG...]
-```
-
-Add `-d` / `--detach` to start it in the background.
-
-Examples:
-
-```bash
-crate start c144672a8e04
-```
-
-```bash
-crate start c144672a8e04 ls -l /
-```
-
-```bash
-crate start -d c144672a8e04
-```
-
-If no command is provided, the image’s default `CMD` is used.
-
-In attached mode, Crate allocates a real PTY so interactive shells and terminal programs behave normally.
-
----
-
-### Run (create + start)
-
-`run` is a convenience command that creates a new container and immediately starts it.
-
-```bash
-crate run alpine
-```
-
-```bash
-crate run alpine /bin/sh -c "echo hello world"  
-```
-
-```bash
-crate run -d alpine
-```
-
-```bash
-crate run -d -p 12345:80 nginx
-```
-
-```bash
-crate run --user redis redis
-```
-
----
-
-### Stop a container
-
-Stops one or more running containers by ID.
-
-```bash
-crate stop <CONTAINER_ID>
-```
-
----
-
-### Remove containers
-
-Removes one or more stopped containers.
-
-```bash
-crate rm <CONTAINER_ID>
-```
-
-Running containers must be stopped first.
-
----
-
-### List containers
-
-Lists running containers by default.
-
-```bash
+crate pull nginx
+crate run --name my-nginx -d -p 8080:80 nginx
 crate ps
+crate logs my-nginx
+crate stop my-nginx
+crate rm my-nginx
 ```
-
-Show all containers:
-
-```bash
-crate ps -a
-```
-
----
-
-### View logs
-
-Prints a container’s captured stdout/stderr.
-
-```bash
-crate logs <CONTAINER_ID>
-```
-
-Follow output:
-
-```bash
-crate logs -f <CONTAINER_ID>
-```
-
----
-
-### Remove images
-
-Removes one or more local image tags.
-
-```bash
-crate rmi alpine:latest
-```
-
-If removing a tag leaves a manifest untagged, Crate deletes that manifest metadata and prunes any config or layer blobs that are no longer referenced by another local image.
 
 
 ## Implemented Concepts
