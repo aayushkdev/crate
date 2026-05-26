@@ -113,7 +113,9 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 
 	if err := container.UpdateState(containerID, func(s *container.State) {
+		createdAt := s.CreatedAt
 		*s = *state
+		s.CreatedAt = createdAt
 	}); err != nil {
 		cleanupLaunch(syncW, cmd.Process.Pid, containerID)
 		return err

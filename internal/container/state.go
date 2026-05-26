@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	cratenet "github.com/aayushkdev/crate/internal/net"
 	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
@@ -39,13 +40,16 @@ type State struct {
 }
 
 type Summary struct {
-	ID       string
-	Name     string
-	Image    string
-	Status   Status
-	PID      int
-	Command  string
-	ExitCode int
+	ID          string
+	Name        string
+	Image       string
+	Status      Status
+	PID         int
+	Command     string
+	ExitCode    int
+	NetworkMode string
+	Network     cratenet.Config
+	CreatedAt   time.Time
 }
 
 func LogPath(id string) string {
@@ -133,15 +137,22 @@ func ListSummaries() ([]Summary, error) {
 		if err != nil {
 			continue
 		}
+		var cfg Config
+		if err := storage.Read(storage.ContainerConfigPath(id), &cfg); err == nil {
+			cfg.Network = cratenet.NormalizeConfig(cfg.Network, cfg.Rootless)
+		}
 
 		summaries = append(summaries, Summary{
-			ID:       state.ID,
-			Name:     state.Name,
-			Image:    state.Image,
-			Status:   state.Status,
-			PID:      state.PID,
-			Command:  strings.Join(state.Command, " "),
-			ExitCode: state.ExitCode,
+			ID:          state.ID,
+			Name:        state.Name,
+			Image:       state.Image,
+			Status:      state.Status,
+			PID:         state.PID,
+			Command:     strings.Join(state.Command, " "),
+			ExitCode:    state.ExitCode,
+			NetworkMode: state.NetworkMode,
+			Network:     cfg.Network,
+			CreatedAt:   summaryCreatedAt(state),
 		})
 	}
 
@@ -150,6 +161,16 @@ func ListSummaries() ([]Summary, error) {
 	})
 
 	return summaries, nil
+}
+
+func summaryCreatedAt(state *State) time.Time {
+	if !state.CreatedAt.IsZero() {
+		return state.CreatedAt
+	}
+	if !state.StartedAt.IsZero() {
+		return state.StartedAt
+	}
+	return state.FinishedAt
 }
 
 func FormatStatus(state *State) string {

@@ -5,12 +5,17 @@ import (
 	"io"
 	"sort"
 	"text/tabwriter"
+	"time"
 )
 
 type Summary struct {
-	Name string
-	ID   string
-	Size int64
+	Name           string
+	ID             string
+	ManifestDigest string
+	Platform       string
+	Layers         int
+	Created        time.Time
+	Size           int64
 }
 
 func Images(stdout io.Writer) error {
@@ -20,13 +25,17 @@ func Images(stdout io.Writer) error {
 	}
 
 	w := tabwriter.NewWriter(stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "IMAGE\tID\tSIZE")
+	fmt.Fprintln(w, "IMAGE\tID\tMANIFEST\tPLATFORM\tLAYERS\tCREATED\tSIZE")
 	for _, summary := range summaries {
 		fmt.Fprintf(
 			w,
-			"%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%d\t%s\t%s\n",
 			summary.Name,
 			summary.ID,
+			shortImageID(summary.ManifestDigest),
+			summary.Platform,
+			summary.Layers,
+			formatCreated(summary.Created),
 			formatSize(summary.Size),
 		)
 	}
@@ -49,9 +58,13 @@ func ListSummaries() ([]Summary, error) {
 
 		for _, repoTag := range tags {
 			summaries = append(summaries, Summary{
-				Name: repoTag,
-				ID:   meta.ID,
-				Size: meta.Size,
+				Name:           repoTag,
+				ID:             meta.ID,
+				ManifestDigest: meta.ManifestDigest,
+				Platform:       formatPlatform(meta.OS, meta.Architecture),
+				Layers:         len(meta.Layers),
+				Created:        meta.Created,
+				Size:           meta.Size,
 			})
 		}
 	}
@@ -64,6 +77,27 @@ func ListSummaries() ([]Summary, error) {
 	})
 
 	return summaries, nil
+}
+
+func formatPlatform(osName, arch string) string {
+	if osName == "" && arch == "" {
+		return "-"
+	}
+	if osName == "" {
+		return arch
+	}
+	if arch == "" {
+		return osName
+	}
+	return osName + "/" + arch
+}
+
+func formatCreated(created time.Time) string {
+	if created.IsZero() {
+		return "-"
+	}
+
+	return created.Local().Format("2006-01-02 15:04")
 }
 
 func formatSize(size int64) string {
