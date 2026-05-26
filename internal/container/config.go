@@ -16,6 +16,7 @@ type Config struct {
 	Cmd        []string        `json:"cmd,omitempty"`
 	Env        []string        `json:"env,omitempty"`
 	EntryPoint []string        `json:"entrypoint,omitempty"`
+	WorkingDir string          `json:"working_dir,omitempty"`
 	User       string          `json:"user,omitempty"`
 	Network    cratenet.Config `json:"network,omitempty"`
 }
@@ -33,6 +34,7 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		Cmd:        imgCfg.Config.Cmd,
 		Env:        imgCfg.Config.Env,
 		EntryPoint: imgCfg.Config.Entrypoint,
+		WorkingDir: imgCfg.Config.WorkingDir,
 		User:       imgCfg.Config.User,
 	}
 	if opts.User != "" {

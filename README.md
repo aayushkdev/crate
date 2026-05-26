@@ -63,6 +63,7 @@ Flags:
 | `run` | `-d, --detach` | Run the container in the background |
 | `run`, `create` | `--name <name>` | Assign a container name |
 | `run`, `create` | `--user <user>` | Run as `USER`, `UID`, `USER:GROUP`, or `UID:GID` |
+| `run`, `start` | `-w, --workdir <path>` | Override the working directory for that launch |
 | `run`, `create` | `-n, --network <mode>` | Select `host`, `none`, or `private` networking |
 | `run`, `create` | `-p, --publish <spec>` | Publish a port with `HOST:CONTAINER[/tcp|udp]`; applies to `private` networking |
 | `ps` | `-a, --all` | Show all containers instead of only running containers |

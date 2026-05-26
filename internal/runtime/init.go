@@ -40,6 +40,7 @@ func InitContainer(containerID string, command []string) {
 	if cfg.Network.Mode == cratenet.ModePrivate {
 		Fatal(cratenet.WaitForInterface(cfg.Network.InterfaceName, 5*time.Second))
 	}
+	applyWorkingDir(cfg.WorkingDir)
 	Fatal(container.ApplyUser(cfg.User))
 
 	if len(command) == 0 {
@@ -54,6 +55,19 @@ func InitContainer(containerID string, command []string) {
 	Fatal(err)
 
 	Fatal(syscall.Exec(execPath, cmd, env))
+}
+
+func applyWorkingDir(workingDir string) {
+	if workingDir == "" {
+		return
+	}
+	if err := os.Chdir(workingDir); err == nil {
+		return
+	} else {
+		fmt.Fprintf(os.Stderr, "crate: warning: working directory %q is unavailable: %v; using /\n", workingDir, err)
+	}
+
+	Fatal(os.Chdir("/"))
 }
 
 func reexecMappedInit(containerID string, command []string) error {

@@ -2,7 +2,7 @@ package runtime
 
 import "github.com/aayushkdev/crate/internal/container"
 
-func Start(containerID string, command []string, detach bool, user string) error {
+func Start(containerID string, command []string, detach bool, user string, workingDir string) error {
 	cfg, err := container.ReadConfig(containerID)
 	if err != nil {
 		return err
@@ -10,6 +10,9 @@ func Start(containerID string, command []string, detach bool, user string) error
 	containerID = cfg.ID
 	if user != "" {
 		cfg.User = user
+	}
+	if workingDir != "" {
+		cfg.WorkingDir = workingDir
 	}
 
 	if detach {
