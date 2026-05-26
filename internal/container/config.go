@@ -39,7 +39,19 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		cfg.User = opts.User
 	}
 	cfg.Network = cratenet.DefaultConfig(cfg.Rootless)
+	if opts.NetworkMode != "" {
+		cfg.Network.Mode = opts.NetworkMode
+	}
+	cfg.Network = cratenet.NormalizeConfig(cfg.Network, cfg.Rootless)
 	cfg.Network.Publish = append(cfg.Network.Publish, opts.Publish...)
+	var warning string
+	cfg.Network, warning = cratenet.DropUnsupportedPublishedPorts(cfg.Network)
+	if warning != "" {
+		os.Stderr.WriteString("crate: warning: " + warning + "\n")
+	}
+	if err := cratenet.ValidateConfig(cfg.Network, cfg.Rootless); err != nil {
+		return err
+	}
 
 	if err := os.MkdirAll(storage.ContainerDir(id), 0755); err != nil {
 		return err

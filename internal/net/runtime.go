@@ -21,7 +21,11 @@ func ResolveRuntimeConfig(cfg Config, rootless bool) (Config, string, error) {
 		fallback.Backend = ""
 		fallback.InterfaceName = ""
 		fallback.Publish = nil
-		return fallback, "pasta not installed; continuing with networking disabled", nil
+		warning := "pasta not installed; using none networking"
+		if len(cfg.Publish) > 0 {
+			warning += "; " + IgnoredPublishedPortsWarning(ModeNone)
+		}
+		return fallback, warning, nil
 	}
 
 	return cfg, "", nil

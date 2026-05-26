@@ -16,9 +16,10 @@ import (
 )
 
 type CreateOptions struct {
-	Publish []cratenet.PublishedPort
-	User    string
-	Name    string
+	Publish     []cratenet.PublishedPort
+	NetworkMode cratenet.Mode
+	User        string
+	Name        string
 }
 
 var createMu sync.Mutex

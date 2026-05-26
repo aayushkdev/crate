@@ -48,7 +48,7 @@ func PS(stdout io.Writer, all bool) error {
 				formatPID(summary.PID),
 				formatAge(summary.CreatedAt),
 				formatNetwork(summary),
-				formatPorts(summary.Network.Publish),
+				formatPorts(summary),
 				command,
 			)
 		} else {
@@ -105,7 +105,16 @@ func formatNetwork(summary container.Summary) string {
 	}
 }
 
-func formatPorts(ports []cratenet.PublishedPort) string {
+func formatPorts(summary container.Summary) string {
+	mode := cratenet.Mode(summary.NetworkMode)
+	if mode == "" {
+		mode = summary.Network.Mode
+	}
+	if mode != cratenet.ModePrivate {
+		return "-"
+	}
+
+	ports := summary.Network.Publish
 	if len(ports) == 0 {
 		return "-"
 	}

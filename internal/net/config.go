@@ -68,12 +68,42 @@ func NormalizeConfig(cfg Config, rootless bool) Config {
 	return cfg
 }
 
+func ParseMode(value string) (Mode, error) {
+	switch Mode(strings.TrimSpace(value)) {
+	case "":
+		return "", nil
+	case ModeHost:
+		return ModeHost, nil
+	case ModeNone:
+		return ModeNone, nil
+	case ModePrivate:
+		return ModePrivate, nil
+	default:
+		return "", fmt.Errorf("unsupported network mode %q (must be host, none, or private)", value)
+	}
+}
+
+func DropUnsupportedPublishedPorts(cfg Config) (Config, string) {
+	if len(cfg.Publish) == 0 || cfg.Mode == ModePrivate {
+		return cfg, ""
+	}
+
+	mode := cfg.Mode
+	if mode == "" {
+		mode = "default"
+	}
+	cfg.Publish = nil
+
+	return cfg, IgnoredPublishedPortsWarning(mode)
+}
+
+func IgnoredPublishedPortsWarning(mode Mode) string {
+	return fmt.Sprintf("ignoring published ports because %s networking does not support port publishing", mode)
+}
+
 func ValidateConfig(cfg Config, rootless bool) error {
 	switch cfg.Mode {
 	case ModeHost, ModeNone:
-		if len(cfg.Publish) > 0 {
-			return fmt.Errorf("port publishing requires private networking")
-		}
 		return nil
 	case ModePrivate:
 		if !rootless {
