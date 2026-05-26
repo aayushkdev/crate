@@ -33,6 +33,10 @@ func ImagesDir() string {
 	return filepath.Join(CrateRoot(), imagesDirName)
 }
 
+func BlobsDir() string {
+	return filepath.Join(CrateRoot(), blobsDirName)
+}
+
 func ImageMetadataPath(digest string) (string, error) {
 	if digest == "" {
 		return "", fmt.Errorf("invalid digest: %s", digest)
@@ -48,7 +52,7 @@ func BlobPath(digest string) (string, error) {
 	}
 
 	algo, hash := parts[0], parts[1]
-	return filepath.Join(CrateRoot(), blobsDirName, algo, hash), nil
+	return filepath.Join(BlobsDir(), algo, hash), nil
 }
 
 func ContainerRootfsPath(id string) string {

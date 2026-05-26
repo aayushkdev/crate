@@ -163,11 +163,12 @@ Watch how `state.json` and the visible status evolve across those commands. Then
 
 ```sh
 go run ./cmd/crate rm "$id"
+go run ./cmd/crate container prune
 ```
 
 ## Key Takeaways
 
 - Lifecycle management is built from ordinary Linux primitives: files, PIDs, signals, and process groups.
 - Crate persists container state explicitly instead of depending on a daemon.
-- `crate rm` is just another state transition plus directory cleanup, not a special privileged subsystem.
+- `crate rm` and `crate container prune` are directory cleanup operations guarded by persisted state.
 - TERM followed by KILL is a policy choice that balances graceful shutdown and predictability.

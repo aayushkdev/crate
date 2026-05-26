@@ -145,10 +145,18 @@ and confirm that the container directory disappears. The same works by name:
 go run ./cmd/crate rm my-alpine
 ```
 
+To clear all stopped containers in one pass, use:
+
+```sh
+go run ./cmd/crate container prune
+```
+
+When running rootless, Crate skips rootful containers during prune and prints a warning; run Crate as root to clear those root-owned container directories.
+
 ## Key Takeaways
 
 - A container is a concrete on-disk instance, not just an image plus a PID.
 - Crate auto-pulls missing images during creation to keep the workflow simple.
 - `config.json` captures process defaults; `state.json` captures lifecycle state.
-- `crate rm` works because container state is durable and inspectable on disk.
+- `crate rm` and `crate container prune` work because container state is durable and inspectable on disk.
 - `create` is the bridge between immutable image content and mutable runtime state.

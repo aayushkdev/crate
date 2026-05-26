@@ -36,7 +36,7 @@ func Images(stdout io.Writer) error {
 			summary.Platform,
 			summary.Layers,
 			formatCreated(summary.Created),
-			formatSize(summary.Size),
+			FormatSize(summary.Size),
 		)
 	}
 
@@ -100,7 +100,7 @@ func formatCreated(created time.Time) string {
 	return created.Local().Format("2006-01-02 15:04")
 }
 
-func formatSize(size int64) string {
+func FormatSize(size int64) string {
 	const unit = 1024
 	if size < unit {
 		return fmt.Sprintf("%d B", size)

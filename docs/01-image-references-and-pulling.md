@@ -122,15 +122,16 @@ Then run:
 ```sh
 go run ./cmd/crate images
 go run ./cmd/crate rmi alpine:latest
+go run ./cmd/crate image prune
 ```
 
-and inspect how the local metadata changes.
+and inspect how the local metadata and blob store change. `rmi` removes a tag reference; `image prune` removes dangling image metadata and blob files that no remaining image metadata references.
 
 ## Key Takeaways
 
 - Image pulling starts from a mutable name and ends with immutable local content.
 - Linux provides the networking and file primitives; the registry protocol lives in userspace.
 - Crate stores local image metadata by manifest digest, not by tag filename.
-- `crate images` and `crate rmi` are thin views over that manifest-backed store.
+- `crate images`, `crate rmi`, and `crate image prune` are thin views over that manifest-backed store.
 - Crate keeps reference parsing and pull policy explicit so the flow is easy to follow.
 - Pulling is only the front door; manifests decide what content actually belongs to a tag.

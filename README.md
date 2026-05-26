@@ -36,8 +36,10 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 | `crate ps [-a]` | List running containers (use `-a` for all) |
 | `crate stop <container>...` | Stop running containers |
 | `crate rm <container>...` | Remove stopped containers |
+| `crate container prune` | Remove all stopped containers |
 | `crate logs [-f] <container>` | View container logs |
 | `crate rmi <image>...` | Remove local image tags |
+| `crate image prune` | Remove unreferenced image data |
 
 
 
