@@ -47,7 +47,7 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringArrayVarP(&createPublish, "publish", "p", nil, "Publish a container port to the host (HOST:CONTAINER[/tcp|udp])")
-	createCmd.Flags().StringVar(&createNetwork, "network", "", "Network mode: host, none, or private")
+	createCmd.Flags().StringVarP(&createNetwork, "network", "n", "", "Network mode: host, none, or private")
 	createCmd.Flags().StringVar(&createUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	createCmd.Flags().StringVar(&createName, "name", "", "Assign a name to the container")
 	rootCmd.AddCommand(createCmd)

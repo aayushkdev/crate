@@ -80,6 +80,28 @@ func DefaultConfig(rootless bool) Config {
 
 This is where Crate decides whether the container shares the host stack, gets a private namespace with connectivity, or gets a private namespace with no external networking at all.
 
+Users can override that policy on `crate run` and `crate create` with `--network` or `-n`:
+
+```sh
+crate run -n host alpine ip addr
+crate run -n none alpine ip addr
+crate run -n private alpine ip addr
+```
+
+The accepted modes are:
+
+- `host`: share the host network stack
+- `none`: create a network namespace, bring up loopback, and provide no external connectivity
+- `private`: create a network namespace and use the configured backend, currently `pasta` for rootless containers
+
+Port publishing is meaningful only in `private` mode:
+
+```sh
+crate run -n private -p 8080:80 nginx
+```
+
+If `-p` is supplied with `host` or `none`, Crate warns, drops the publish entries from the stored config, and continues. In `host` mode the process is already using host ports directly; in `none` mode there is no external network path to publish through.
+
 Crate resolves that policy at runtime and degrades cleanly when `pasta` is unavailable:
 
 ```go
@@ -89,11 +111,12 @@ if _, err := exec.LookPath("pasta"); err != nil {
     fallback.Mode = ModeNone
     fallback.Backend = ""
     fallback.InterfaceName = ""
-    return fallback, "pasta not installed; continuing with networking disabled", nil
+    fallback.Publish = nil
+    return fallback, "pasta not installed; using none networking", nil
 }
 ```
 
-That fallback is deliberate. The container keeps its private namespace and loses connectivity instead of silently regaining host-level network sharing.
+That fallback is deliberate. The container keeps its private namespace and loses connectivity instead of silently regaining host-level network sharing. If published ports were configured, the warning also explains that the mappings are ignored because the effective mode is `none`.
 
 Launch-time namespace selection happens in the parent:
 
@@ -239,7 +262,7 @@ test -f "$HOME/.local/share/crate/containers/$id/network.json" && \
 crate stop "$id"
 ```
 
-If `pasta` is installed, `network.json` should exist and include the helper PID plus the `crate0` interface name. If `pasta` is not installed, `state.json` should still show `"network_mode": "none"` after Crate prints the warning about continuing with networking disabled.
+If `pasta` is installed, `network.json` should exist and include the helper PID plus the `crate0` interface name. If `pasta` is not installed, `state.json` should still show `"network_mode": "none"` after Crate prints the warning about using none networking.
 
 ## Key Takeaways
 

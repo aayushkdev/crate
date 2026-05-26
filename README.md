@@ -30,8 +30,8 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 |---------|-------------|
 | `crate pull <image>` | Pull an image from a registry |
 | `crate images` | List local images |
-| `crate run [--name] [--user] [-p] [-d] <image> [cmd]` | Create and start a container |
-| `crate create [--name] [--user] [-p] <image>` | Create a container (without starting) |
+| `crate run [--name] [--user] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
+| `crate create [--name] [--user] [-n] [-p] <image>` | Create a container (without starting) |
 | `crate start <container> [cmd]` | Start an existing container |
 | `crate ps [-a]` | List running containers (use `-a` for all) |
 | `crate stop <container>...` | Stop running containers |
@@ -47,12 +47,24 @@ Typical workflow:
 
 ```bash
 crate pull nginx
-crate run --name my-nginx -d -p 8080:80 nginx
+crate run --name my-nginx -d -n private -p 8080:80 nginx
 crate ps
 crate logs my-nginx
 crate stop my-nginx
 crate rm my-nginx
 ```
+
+Flags:
+
+| Command | Flag | Description |
+|---------|------|-------------|
+| `run` | `-d, --detach` | Run the container in the background |
+| `run`, `create` | `--name <name>` | Assign a container name |
+| `run`, `create` | `--user <user>` | Run as `USER`, `UID`, `USER:GROUP`, or `UID:GID` |
+| `run`, `create` | `-n, --network <mode>` | Select `host`, `none`, or `private` networking |
+| `run`, `create` | `-p, --publish <spec>` | Publish a port with `HOST:CONTAINER[/tcp|udp]`; applies to `private` networking |
+| `ps` | `-a, --all` | Show all containers instead of only running containers |
+| `logs` | `-f, --follow` | Follow log output |
 
 
 ## Implemented Concepts
