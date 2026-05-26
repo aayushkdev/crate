@@ -1,4 +1,4 @@
-package container
+package runtime
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aayushkdev/crate/internal/container"
 	"github.com/aayushkdev/crate/internal/fs"
 	cratenet "github.com/aayushkdev/crate/internal/net"
 	storage "github.com/aayushkdev/crate/internal/storage"
@@ -16,7 +17,7 @@ import (
 const initMappedEnv = "CRATE_INIT_MAPPED"
 
 func InitContainer(containerID string, command []string) {
-	cfg, err := ReadConfig(containerID)
+	cfg, err := container.ReadConfig(containerID)
 	Fatal(err)
 
 	if os.Getenv(initMappedEnv) != "1" {
@@ -29,7 +30,7 @@ func InitContainer(containerID string, command []string) {
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := storage.ContainerRootfsPath(containerID)
 
-	hostname := clampHostname(cfg.Name)
+	hostname := container.ClampHostname(cfg.Name)
 	Fatal(syscall.Sethostname([]byte(hostname)))
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
@@ -39,17 +40,17 @@ func InitContainer(containerID string, command []string) {
 	if cfg.Network.Mode == cratenet.ModePrivate {
 		Fatal(cratenet.WaitForInterface(cfg.Network.InterfaceName, 5*time.Second))
 	}
-	Fatal(ApplyUser(cfg.User))
+	Fatal(container.ApplyUser(cfg.User))
 
 	if len(command) == 0 {
 		command = cfg.Cmd
 	}
 	env := cfg.Env
 
-	cmd, err := ResolveEntrypoint(cfg, command)
+	cmd, err := container.ResolveEntrypoint(cfg, command)
 	Fatal(err)
 
-	execPath, err := resolvePath(cmd[0], env)
+	execPath, err := container.ResolvePath(cmd[0], env)
 	Fatal(err)
 
 	Fatal(syscall.Exec(execPath, cmd, env))

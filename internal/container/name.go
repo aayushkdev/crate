@@ -12,7 +12,6 @@ import (
 
 const maxHostnameBytes = 63
 
-
 func resolveContainerName(requested string) (string, error) {
 	name := strings.TrimSpace(requested)
 	if name == "" {
@@ -63,7 +62,7 @@ func sanitizeName(name string) string {
 	if name == "" {
 		return ""
 	}
-	name = clampHostname(name)
+	name = ClampHostname(name)
 	return name
 }
 
@@ -153,7 +152,7 @@ func isHex(value string) bool {
 	return true
 }
 
-func clampHostname(name string) string {
+func ClampHostname(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return ""

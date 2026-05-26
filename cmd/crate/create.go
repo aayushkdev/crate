@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/aayushkdev/crate/internal/container"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 )
 
 var createPublish []string
@@ -19,7 +20,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		image := args[0]
 
-		publish, err := parsePublishedPorts(createPublish)
+		publish, err := cratenet.ParsePublishedPorts(createPublish)
 		if err != nil {
 			return err
 		}

@@ -17,7 +17,7 @@ type ImageConfig struct {
 }
 
 func ReadImageConfig(digest string) (*ImageConfig, error) {
-	path, err := BlobPath(digest)
+	path, err := storage.BlobPath(digest)
 	if err != nil {
 		return nil, err
 	}

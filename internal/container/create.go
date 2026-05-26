@@ -68,7 +68,7 @@ func Create(imageName string, opts CreateOptions) (string, error) {
 	}
 
 	for _, layer := range meta.Layers {
-		path, err := image.BlobPath(layer)
+		path, err := storage.BlobPath(layer)
 		if err != nil {
 			return "", err
 		}

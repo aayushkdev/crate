@@ -1,13 +1,17 @@
 package storage
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 )
 
 const (
 	containersDirName   = "containers"
+	imagesDirName       = "images"
+	blobsDirName        = "blobs"
 	rootfsDirName       = "rootfs"
 	logsDirName         = "logs"
 	containerConfigName = "config.json"
@@ -23,6 +27,28 @@ func ContainerDir(id string) string {
 
 func ContainersDir() string {
 	return filepath.Join(CrateRoot(), containersDirName)
+}
+
+func ImagesDir() string {
+	return filepath.Join(CrateRoot(), imagesDirName)
+}
+
+func ImageMetadataPath(digest string) (string, error) {
+	if digest == "" {
+		return "", fmt.Errorf("invalid digest: %s", digest)
+	}
+
+	return filepath.Join(ImagesDir(), digest), nil
+}
+
+func BlobPath(digest string) (string, error) {
+	parts := strings.SplitN(digest, ":", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid digest: %s", digest)
+	}
+
+	algo, hash := parts[0], parts[1]
+	return filepath.Join(CrateRoot(), blobsDirName, algo, hash), nil
 }
 
 func ContainerRootfsPath(id string) string {

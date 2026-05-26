@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/aayushkdev/crate/internal/container"
+	"github.com/aayushkdev/crate/internal/runtime"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 		containerID := os.Args[2]
 		command := os.Args[3:]
 
-		container.InitContainer(containerID, command)
+		runtime.InitContainer(containerID, command)
 		return
 	}
 

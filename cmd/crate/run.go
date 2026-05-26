@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/aayushkdev/crate/internal/container"
+	cratenet "github.com/aayushkdev/crate/internal/net"
 	"github.com/aayushkdev/crate/internal/runtime"
 )
 
@@ -22,7 +23,7 @@ var runCmd = &cobra.Command{
 		image := args[0]
 		command := args[1:]
 
-		publish, err := parsePublishedPorts(runPublish)
+		publish, err := cratenet.ParsePublishedPorts(runPublish)
 		if err != nil {
 			return err
 		}

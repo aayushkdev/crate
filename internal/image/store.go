@@ -6,24 +6,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	storage "github.com/aayushkdev/crate/internal/storage"
 )
 
-func BlobPath(digest string) (string, error) {
-	root := storage.CrateRoot()
-	parts := strings.SplitN(digest, ":", 2)
-	if len(parts) != 2 {
-		return "", fmt.Errorf("invalid digest: %s", digest)
-	}
-
-	algo, hash := parts[0], parts[1]
-	return filepath.Join(root, "blobs", algo, hash), nil
-}
-
 func blobExists(digest string) (bool, error) {
-	path, err := BlobPath(digest)
+	path, err := storage.BlobPath(digest)
 	if err != nil {
 		return false, err
 	}
@@ -38,7 +26,7 @@ func blobExists(digest string) (bool, error) {
 }
 
 func deleteBlobByDigest(digest string) error {
-	path, err := BlobPath(digest)
+	path, err := storage.BlobPath(digest)
 	if err != nil {
 		return err
 	}
@@ -87,7 +75,7 @@ func downloadBlob(ref *Reference, digest string) error {
 		return fmt.Errorf("blob download failed: %s", resp.Status)
 	}
 
-	path, err := BlobPath(digest)
+	path, err := storage.BlobPath(digest)
 	if err != nil {
 		return err
 	}

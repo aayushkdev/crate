@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func resolvePath(cmd string, env []string) (string, error) {
+func ResolvePath(cmd string, env []string) (string, error) {
 	if strings.Contains(cmd, "/") {
 		if st, err := os.Stat(cmd); err == nil && !st.IsDir() {
 			return cmd, nil

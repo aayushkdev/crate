@@ -1,7 +1,6 @@
 package image
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,15 +20,6 @@ type ImageMetadata struct {
 	Architecture   string    `json:"architecture"`
 	Size           int64     `json:"size"`
 	Created        time.Time `json:"created"`
-}
-
-func imageMetaPathByDigest(digest string) (string, error) {
-	if digest == "" {
-		return "", fmt.Errorf("invalid digest: %s", digest)
-	}
-
-	root := storage.CrateRoot()
-	return filepath.Join(root, "images", digest), nil
 }
 
 func MetadataExists(ref *Reference) bool {
@@ -92,7 +82,7 @@ func buildImageMetadata(ref *Reference, img *ImageManifest) (*ImageMetadata, err
 }
 
 func writeMetadataByDigest(meta *ImageMetadata) error {
-	path, err := imageMetaPathByDigest(meta.ManifestDigest)
+	path, err := storage.ImageMetadataPath(meta.ManifestDigest)
 	if err != nil {
 		return err
 	}
@@ -101,7 +91,7 @@ func writeMetadataByDigest(meta *ImageMetadata) error {
 }
 
 func deleteMetadataByDigest(digest string) error {
-	path, err := imageMetaPathByDigest(digest)
+	path, err := storage.ImageMetadataPath(digest)
 	if err != nil {
 		return err
 	}
@@ -130,7 +120,7 @@ func ReadMetadata(ref *Reference) (*ImageMetadata, error) {
 }
 
 func readMetadataByDigest(digest string) (*ImageMetadata, error) {
-	path, err := imageMetaPathByDigest(digest)
+	path, err := storage.ImageMetadataPath(digest)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +134,7 @@ func readMetadataByDigest(digest string) (*ImageMetadata, error) {
 }
 
 func readAllMetadata() ([]*ImageMetadata, error) {
-	root := filepath.Join(storage.CrateRoot(), "images")
+	root := storage.ImagesDir()
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		if os.IsNotExist(err) {
