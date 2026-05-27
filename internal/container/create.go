@@ -18,6 +18,7 @@ import (
 type CreateOptions struct {
 	Publish     []cratenet.PublishedPort
 	NetworkMode cratenet.Mode
+	Env         []string
 	User        string
 	Name        string
 }

@@ -14,6 +14,7 @@ var runDetach bool
 var runPublish []string
 var runNetwork string
 var runWorkingDir string
+var runEnv []string
 var runUser string
 var runName string
 
@@ -37,6 +38,7 @@ var runCmd = &cobra.Command{
 		containerID, err := runtime.Run(image, command, runDetach, container.CreateOptions{
 			Publish:     publish,
 			NetworkMode: networkMode,
+			Env:         runEnv,
 			User:        runUser,
 			Name:        runName,
 		}, runWorkingDir)
@@ -58,6 +60,7 @@ func init() {
 	runCmd.Flags().StringArrayVarP(&runPublish, "publish", "p", nil, "Publish a container port to the host (HOST:CONTAINER[/tcp|udp])")
 	runCmd.Flags().StringVarP(&runNetwork, "network", "n", "", "Network mode: host, none, or private")
 	runCmd.Flags().StringVarP(&runWorkingDir, "workdir", "w", "", "Working directory inside the container")
+	runCmd.Flags().StringArrayVarP(&runEnv, "env", "e", nil, "Set environment variable (KEY=value)")
 	runCmd.Flags().StringVar(&runUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	runCmd.Flags().StringVar(&runName, "name", "", "Assign a name to the container")
 	rootCmd.AddCommand(runCmd)

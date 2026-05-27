@@ -26,13 +26,18 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 	if err != nil {
 		return err
 	}
+	env, err := mergeEnv(imgCfg.Config.Env, opts.Env)
+	if err != nil {
+		return err
+	}
+
 	cfg := Config{
 		ID:         id,
 		Name:       opts.Name,
 		Image:      primaryRepoTag(meta),
 		Rootless:   os.Geteuid() != 0,
 		Cmd:        imgCfg.Config.Cmd,
-		Env:        imgCfg.Config.Env,
+		Env:        env,
 		EntryPoint: imgCfg.Config.Entrypoint,
 		WorkingDir: imgCfg.Config.WorkingDir,
 		User:       imgCfg.Config.User,

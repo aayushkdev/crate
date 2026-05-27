@@ -11,6 +11,7 @@ import (
 
 var createPublish []string
 var createNetwork string
+var createEnv []string
 var createUser string
 var createName string
 
@@ -33,6 +34,7 @@ var createCmd = &cobra.Command{
 		id, err := container.Create(image, container.CreateOptions{
 			Publish:     publish,
 			NetworkMode: networkMode,
+			Env:         createEnv,
 			User:        createUser,
 			Name:        createName,
 		})
@@ -48,6 +50,7 @@ var createCmd = &cobra.Command{
 func init() {
 	createCmd.Flags().StringArrayVarP(&createPublish, "publish", "p", nil, "Publish a container port to the host (HOST:CONTAINER[/tcp|udp])")
 	createCmd.Flags().StringVarP(&createNetwork, "network", "n", "", "Network mode: host, none, or private")
+	createCmd.Flags().StringArrayVarP(&createEnv, "env", "e", nil, "Set environment variable (KEY=value)")
 	createCmd.Flags().StringVar(&createUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	createCmd.Flags().StringVar(&createName, "name", "", "Assign a name to the container")
 	rootCmd.AddCommand(createCmd)
