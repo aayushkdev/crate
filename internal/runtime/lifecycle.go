@@ -36,7 +36,23 @@ func finalizeContainer(containerID string, waitErr error) error {
 	}
 	warnPrivilegeDropFailure(containerID, exitCode)
 
+	if err := removeIfAutoRemove(containerID); err != nil {
+		return errors.Join(waitErr, err)
+	}
+
 	return waitErr
+}
+
+func removeIfAutoRemove(containerID string) error {
+	cfg, err := container.ReadConfig(containerID)
+	if err != nil {
+		return err
+	}
+	if !cfg.AutoRemove {
+		return nil
+	}
+
+	return container.Remove(containerID)
 }
 
 func exitCode(err error) int {

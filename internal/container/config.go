@@ -19,6 +19,7 @@ type Config struct {
 	WorkingDir string          `json:"working_dir,omitempty"`
 	User       string          `json:"user,omitempty"`
 	Network    cratenet.Config `json:"network,omitempty"`
+	AutoRemove bool            `json:"auto_remove,omitempty"`
 }
 
 func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error {
@@ -41,6 +42,7 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		EntryPoint: imgCfg.Config.Entrypoint,
 		WorkingDir: imgCfg.Config.WorkingDir,
 		User:       imgCfg.Config.User,
+		AutoRemove: opts.AutoRemove,
 	}
 	if opts.User != "" {
 		cfg.User = opts.User

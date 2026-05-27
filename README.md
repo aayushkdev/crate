@@ -30,7 +30,7 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 |---------|-------------|
 | `crate pull <image>` | Pull an image from a registry |
 | `crate images` | List local images |
-| `crate run [--name] [--user] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
+| `crate run [--name] [--user] [--rm] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
 | `crate create [--name] [--user] [-n] [-p] <image>` | Create a container (without starting) |
 | `crate start <container> [cmd]` | Start an existing container |
 | `crate ps [-a]` | List running containers (use `-a` for all) |
@@ -61,6 +61,7 @@ Flags:
 | Command | Flag | Description |
 |---------|------|-------------|
 | `run` | `-d, --detach` | Run the container in the background |
+| `run` | `--rm` | Automatically remove the container when it exits or stops |
 | `run`, `create` | `--name <name>` | Assign a container name |
 | `run`, `create` | `--user <user>` | Run as `USER`, `UID`, `USER:GROUP`, or `UID:GID` |
 | `run`, `create` | `-e, --env <KEY=value>` | Set an environment variable |

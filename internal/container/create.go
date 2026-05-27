@@ -21,6 +21,7 @@ type CreateOptions struct {
 	Env         []string
 	User        string
 	Name        string
+	AutoRemove  bool
 }
 
 var createMu sync.Mutex

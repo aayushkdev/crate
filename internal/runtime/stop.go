@@ -32,14 +32,7 @@ func Stop(containerID string) error {
 	}
 
 	if waitForExit(state.PID, 1*time.Second) {
-		if err := cratenet.Teardown(containerID); err != nil {
-			return err
-		}
-
-		return container.UpdateState(containerID, func(s *container.State) {
-			s.Status = container.StatusStopped
-			s.FinishedAt = time.Now().UTC()
-		})
+		return finishStoppedContainer(containerID)
 	}
 
 	if err := killProcessGroup(state.PID, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
@@ -49,12 +42,20 @@ func Stop(containerID string) error {
 	for !waitForExit(state.PID, 100*time.Millisecond) {
 	}
 
+	return finishStoppedContainer(containerID)
+}
+
+func finishStoppedContainer(containerID string) error {
 	if err := cratenet.Teardown(containerID); err != nil {
 		return err
 	}
 
-	return container.UpdateState(containerID, func(s *container.State) {
+	if err := container.UpdateState(containerID, func(s *container.State) {
 		s.Status = container.StatusStopped
 		s.FinishedAt = time.Now().UTC()
-	})
+	}); err != nil {
+		return err
+	}
+
+	return removeIfAutoRemove(containerID)
 }

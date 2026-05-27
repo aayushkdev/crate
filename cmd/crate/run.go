@@ -17,6 +17,7 @@ var runWorkingDir string
 var runEnv []string
 var runUser string
 var runName string
+var runAutoRemove bool
 
 var runCmd = &cobra.Command{
 	Use:   "run [OPTIONS] IMAGE [COMMAND] [ARG...]",
@@ -41,6 +42,7 @@ var runCmd = &cobra.Command{
 			Env:         runEnv,
 			User:        runUser,
 			Name:        runName,
+			AutoRemove:  runAutoRemove,
 		}, runWorkingDir)
 		if err != nil {
 			return err
@@ -63,5 +65,6 @@ func init() {
 	runCmd.Flags().StringArrayVarP(&runEnv, "env", "e", nil, "Set environment variable (KEY=value)")
 	runCmd.Flags().StringVar(&runUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	runCmd.Flags().StringVar(&runName, "name", "", "Assign a name to the container")
+	runCmd.Flags().BoolVar(&runAutoRemove, "rm", false, "Automatically remove the container when it exits or stops")
 	rootCmd.AddCommand(runCmd)
 }
