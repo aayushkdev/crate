@@ -29,11 +29,15 @@ func InitContainer(containerID string, command []string) {
 
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := storage.ContainerRootfsPath(containerID)
+	mounts, err := openMounts(cfg.Mounts)
+	Fatal(err)
+	defer closeMounts(mounts)
 
 	hostname := container.ClampHostname(cfg.Name)
 	Fatal(syscall.Sethostname([]byte(hostname)))
 
 	Fatal(fs.Setup(rootfs, cfg.Rootless))
+	Fatal(applyMounts(mounts))
 	if cfg.Network.Mode == cratenet.ModeNone || cfg.Network.Mode == cratenet.ModePrivate {
 		Fatal(cratenet.BringUpLoopback())
 	}

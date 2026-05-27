@@ -20,6 +20,7 @@ type Config struct {
 	User       string          `json:"user,omitempty"`
 	Network    cratenet.Config `json:"network,omitempty"`
 	AutoRemove bool            `json:"auto_remove,omitempty"`
+	Mounts     []Mount         `json:"mounts,omitempty"`
 }
 
 func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error {
@@ -28,6 +29,10 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		return err
 	}
 	env, err := mergeEnv(imgCfg.Config.Env, opts.Env)
+	if err != nil {
+		return err
+	}
+	mounts, err := ValidateMounts(opts.Mounts)
 	if err != nil {
 		return err
 	}
@@ -43,6 +48,7 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 		WorkingDir: imgCfg.Config.WorkingDir,
 		User:       imgCfg.Config.User,
 		AutoRemove: opts.AutoRemove,
+		Mounts:     mounts,
 	}
 	if opts.User != "" {
 		cfg.User = opts.User

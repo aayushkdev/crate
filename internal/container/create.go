@@ -22,6 +22,7 @@ type CreateOptions struct {
 	User        string
 	Name        string
 	AutoRemove  bool
+	Mounts      []Mount
 }
 
 var createMu sync.Mutex

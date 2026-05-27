@@ -30,8 +30,8 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 |---------|-------------|
 | `crate pull <image>` | Pull an image from a registry |
 | `crate images` | List local images |
-| `crate run [--name] [--user] [--rm] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
-| `crate create [--name] [--user] [-n] [-p] <image>` | Create a container (without starting) |
+| `crate run [--name] [--user] [--rm] [-v] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
+| `crate create [--name] [--user] [-v] [-n] [-p] <image>` | Create a container (without starting) |
 | `crate start <container> [cmd]` | Start an existing container |
 | `crate ps [-a]` | List running containers (use `-a` for all) |
 | `crate stop <container>...` | Stop running containers |
@@ -65,6 +65,7 @@ Flags:
 | `run`, `create` | `--name <name>` | Assign a container name |
 | `run`, `create` | `--user <user>` | Run as `USER`, `UID`, `USER:GROUP`, or `UID:GID` |
 | `run`, `create` | `-e, --env <KEY=value>` | Set an environment variable |
+| `run`, `create` | `-v, --volume <host:container[:ro]>` | Bind mount a host path into the container |
 | `run`, `start` | `-w, --workdir <path>` | Override the working directory for that launch |
 | `run`, `create` | `-n, --network <mode>` | Select `host`, `none`, or `private` networking |
 | `run`, `create` | `-p, --publish <spec>` | Publish a port with `HOST:CONTAINER[/tcp|udp]`; applies to `private` networking |
@@ -120,7 +121,6 @@ Flags:
 ## Far off goals (for now)
 
 * Cgroups / resource limits
-* Volume mounts
 * More configuration options
 * Security hardening
 * Full OCI spec compliance

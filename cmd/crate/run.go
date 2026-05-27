@@ -18,6 +18,7 @@ var runEnv []string
 var runUser string
 var runName string
 var runAutoRemove bool
+var runMounts []string
 
 var runCmd = &cobra.Command{
 	Use:   "run [OPTIONS] IMAGE [COMMAND] [ARG...]",
@@ -35,6 +36,10 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		mounts, err := container.ParseMounts(runMounts)
+		if err != nil {
+			return err
+		}
 
 		containerID, err := runtime.Run(image, command, runDetach, container.CreateOptions{
 			Publish:     publish,
@@ -43,6 +48,7 @@ var runCmd = &cobra.Command{
 			User:        runUser,
 			Name:        runName,
 			AutoRemove:  runAutoRemove,
+			Mounts:      mounts,
 		}, runWorkingDir)
 		if err != nil {
 			return err
@@ -66,5 +72,6 @@ func init() {
 	runCmd.Flags().StringVar(&runUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	runCmd.Flags().StringVar(&runName, "name", "", "Assign a name to the container")
 	runCmd.Flags().BoolVar(&runAutoRemove, "rm", false, "Automatically remove the container when it exits or stops")
+	runCmd.Flags().StringArrayVarP(&runMounts, "volume", "v", nil, "Bind mount a host path (HOST_PATH:CONTAINER_PATH[:ro])")
 	rootCmd.AddCommand(runCmd)
 }

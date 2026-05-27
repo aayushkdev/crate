@@ -14,6 +14,7 @@ var createNetwork string
 var createEnv []string
 var createUser string
 var createName string
+var createMounts []string
 
 var createCmd = &cobra.Command{
 	Use:   "create IMAGE",
@@ -30,6 +31,10 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		mounts, err := container.ParseMounts(createMounts)
+		if err != nil {
+			return err
+		}
 
 		id, err := container.Create(image, container.CreateOptions{
 			Publish:     publish,
@@ -37,6 +42,7 @@ var createCmd = &cobra.Command{
 			Env:         createEnv,
 			User:        createUser,
 			Name:        createName,
+			Mounts:      mounts,
 		})
 		if err != nil {
 			return err
@@ -53,5 +59,6 @@ func init() {
 	createCmd.Flags().StringArrayVarP(&createEnv, "env", "e", nil, "Set environment variable (KEY=value)")
 	createCmd.Flags().StringVar(&createUser, "user", "", "Run the container as a specific user (USER, UID, USER:GROUP, or UID:GID)")
 	createCmd.Flags().StringVar(&createName, "name", "", "Assign a name to the container")
+	createCmd.Flags().StringArrayVarP(&createMounts, "volume", "v", nil, "Bind mount a host path (HOST_PATH:CONTAINER_PATH[:ro])")
 	rootCmd.AddCommand(createCmd)
 }
