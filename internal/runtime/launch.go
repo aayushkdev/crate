@@ -107,7 +107,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 	if cfg.Rootless {
 		if err := configureRootlessUserNS(cmd.Process.Pid); err != nil {
-			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
+			cleanupLaunch(syncW, cmd, containerID)
 			return err
 		}
 	}
@@ -117,23 +117,23 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 		*s = *state
 		s.CreatedAt = createdAt
 	}); err != nil {
-		cleanupLaunch(syncW, cmd.Process.Pid, containerID)
+		cleanupLaunch(syncW, cmd, containerID)
 		return err
 	}
 
 	if syncW != nil {
 		if err := cratenet.Setup(containerID, cmd.Process.Pid, netCfg); err != nil {
-			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
+			cleanupLaunch(syncW, cmd, containerID)
 			return err
 		}
 
 		if _, err := syncW.Write([]byte{1}); err != nil {
-			cleanupLaunch(syncW, cmd.Process.Pid, containerID)
+			cleanupLaunch(syncW, cmd, containerID)
 			return err
 		}
 
 		if err := syncW.Close(); err != nil {
-			cleanupLaunch(nil, cmd.Process.Pid, containerID)
+			cleanupLaunch(nil, cmd, containerID)
 			return err
 		}
 	}
@@ -158,12 +158,14 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	return finalizeContainer(containerID, cmd.Wait())
 }
 
-func cleanupLaunch(syncW *os.File, pid int, containerID string) {
+func cleanupLaunch(syncW *os.File, cmd *exec.Cmd, containerID string) {
 	if syncW != nil {
 		_ = syncW.Close()
 	}
-	if pid > 0 {
-		_ = killProcessGroup(pid, syscall.SIGKILL)
+	if cmd != nil && cmd.Process != nil {
+		_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
 	}
 	_ = cratenet.Teardown(containerID)
 }

@@ -41,7 +41,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		containerID, err := runtime.Run(image, command, runDetach, container.CreateOptions{
+		containerID, warnings, err := runtime.Run(image, command, runDetach, container.CreateOptions{
 			Publish:     publish,
 			NetworkMode: networkMode,
 			Env:         runEnv,
@@ -52,6 +52,9 @@ var runCmd = &cobra.Command{
 		}, runWorkingDir)
 		if err != nil {
 			return err
+		}
+		for _, warning := range warnings {
+			fmt.Fprintf(cmd.ErrOrStderr(), "crate: warning: %s\n", warning)
 		}
 
 		if runDetach {

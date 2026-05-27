@@ -36,7 +36,7 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		id, err := container.Create(image, container.CreateOptions{
+		id, warnings, err := container.Create(image, container.CreateOptions{
 			Publish:     publish,
 			NetworkMode: networkMode,
 			Env:         createEnv,
@@ -46,6 +46,9 @@ var createCmd = &cobra.Command{
 		})
 		if err != nil {
 			return err
+		}
+		for _, warning := range warnings {
+			fmt.Fprintf(cmd.ErrOrStderr(), "crate: warning: %s\n", warning)
 		}
 
 		fmt.Println(id)

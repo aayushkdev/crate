@@ -23,19 +23,24 @@ type Config struct {
 	Mounts     []Mount         `json:"mounts,omitempty"`
 }
 
-func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error {
+func buildConfig(id string, meta *image.ImageMetadata, opts CreateOptions) (*Config, []string, error) {
 	imgCfg, err := image.ReadImageConfig(meta.ConfigDigest)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	env, err := mergeEnv(imgCfg.Config.Env, opts.Env)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	mounts, err := ValidateMounts(opts.Mounts)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+	openedMounts, err := OpenMounts(mounts)
+	if err != nil {
+		return nil, nil, err
+	}
+	CloseMounts(openedMounts)
 
 	cfg := Config{
 		ID:         id,
@@ -59,20 +64,28 @@ func writeConfig(id string, meta *image.ImageMetadata, opts CreateOptions) error
 	}
 	cfg.Network = cratenet.NormalizeConfig(cfg.Network, cfg.Rootless)
 	cfg.Network.Publish = append(cfg.Network.Publish, opts.Publish...)
+	if err := cratenet.ValidatePublishedPorts(cfg.Network.Publish); err != nil {
+		return nil, nil, err
+	}
+	var warnings []string
 	var warning string
 	cfg.Network, warning = cratenet.DropUnsupportedPublishedPorts(cfg.Network)
 	if warning != "" {
-		os.Stderr.WriteString("crate: warning: " + warning + "\n")
+		warnings = append(warnings, warning)
 	}
 	if err := cratenet.ValidateConfig(cfg.Network, cfg.Rootless); err != nil {
-		return err
+		return nil, nil, err
 	}
 
+	return &cfg, warnings, nil
+}
+
+func writeConfig(id string, cfg *Config) error {
 	if err := os.MkdirAll(storage.ContainerDir(id), 0755); err != nil {
 		return err
 	}
 
-	return storage.Write(storage.ContainerConfigPath(id), &cfg)
+	return storage.Write(storage.ContainerConfigPath(id), cfg)
 }
 
 func primaryRepoTag(meta *image.ImageMetadata) string {
