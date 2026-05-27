@@ -9,59 +9,21 @@ import (
 	"github.com/aayushkdev/crate/internal/container"
 )
 
-type openedMount struct {
-	mount container.Mount
-	file  *os.File
-	info  os.FileInfo
-}
-
-func openMounts(mounts []container.Mount) ([]openedMount, error) {
-	opened := make([]openedMount, 0, len(mounts))
+func applyMounts(mounts []container.OpenedMount) error {
 	for _, mount := range mounts {
-		file, err := os.Open(mount.Source)
-		if err != nil {
-			closeMounts(opened)
-			return nil, fmt.Errorf("open volume source %s: %w", mount.Source, err)
-		}
-
-		info, err := file.Stat()
-		if err != nil {
-			file.Close()
-			closeMounts(opened)
-			return nil, fmt.Errorf("stat volume source %s: %w", mount.Source, err)
-		}
-
-		opened = append(opened, openedMount{
-			mount: mount,
-			file:  file,
-			info:  info,
-		})
-	}
-
-	return opened, nil
-}
-
-func closeMounts(mounts []openedMount) {
-	for _, mount := range mounts {
-		_ = mount.file.Close()
-	}
-}
-
-func applyMounts(mounts []openedMount) error {
-	for _, mount := range mounts {
-		if err := prepareMountDestination(mount.mount.Destination, mount.info); err != nil {
+		if err := prepareMountDestination(mount.Mount.Destination, mount.Info); err != nil {
 			return err
 		}
 
-		source := fmt.Sprintf("/proc/self/fd/%d", mount.file.Fd())
-		if err := syscall.Mount(source, mount.mount.Destination, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
-			return fmt.Errorf("bind volume %s to %s: %w", mount.mount.Source, mount.mount.Destination, err)
+		source := fmt.Sprintf("/proc/self/fd/%d", mount.File.Fd())
+		if err := syscall.Mount(source, mount.Mount.Destination, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+			return fmt.Errorf("bind volume %s to %s: %w", mount.Mount.Source, mount.Mount.Destination, err)
 		}
 
-		if mount.mount.ReadOnly {
+		if mount.Mount.ReadOnly {
 			flags := uintptr(syscall.MS_BIND | syscall.MS_REMOUNT | syscall.MS_RDONLY | syscall.MS_REC)
-			if err := syscall.Mount(source, mount.mount.Destination, "", flags, ""); err != nil {
-				return fmt.Errorf("remount volume %s read-only: %w", mount.mount.Destination, err)
+			if err := syscall.Mount(source, mount.Mount.Destination, "", flags, ""); err != nil {
+				return fmt.Errorf("remount volume %s read-only: %w", mount.Mount.Destination, err)
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package container
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -10,6 +11,12 @@ type Mount struct {
 	Source      string `json:"source"`
 	Destination string `json:"destination"`
 	ReadOnly    bool   `json:"read_only,omitempty"`
+}
+
+type OpenedMount struct {
+	Mount Mount
+	File  *os.File
+	Info  os.FileInfo
 }
 
 func ParseMounts(values []string) ([]Mount, error) {
@@ -79,4 +86,42 @@ func ValidateMounts(mounts []Mount) ([]Mount, error) {
 	}
 
 	return mounts, nil
+}
+
+func OpenMounts(mounts []Mount) ([]OpenedMount, error) {
+	opened := make([]OpenedMount, 0, len(mounts))
+	for _, mount := range mounts {
+		file, err := os.Open(mount.Source)
+		if err != nil {
+			CloseMounts(opened)
+			return nil, fmt.Errorf("open volume source %s: %w", mount.Source, err)
+		}
+
+		info, err := file.Stat()
+		if err != nil {
+			file.Close()
+			CloseMounts(opened)
+			return nil, fmt.Errorf("stat volume source %s: %w", mount.Source, err)
+		}
+		mode := info.Mode()
+		if !mode.IsDir() && !mode.IsRegular() {
+			file.Close()
+			CloseMounts(opened)
+			return nil, fmt.Errorf("volume source %s must be a regular file or directory", mount.Source)
+		}
+
+		opened = append(opened, OpenedMount{
+			Mount: mount,
+			File:  file,
+			Info:  info,
+		})
+	}
+
+	return opened, nil
+}
+
+func CloseMounts(mounts []OpenedMount) {
+	for _, mount := range mounts {
+		_ = mount.File.Close()
+	}
 }

@@ -29,9 +29,9 @@ func InitContainer(containerID string, command []string) {
 
 	cfg.Network = cratenet.ApplyModeOverride(cfg.Network)
 	rootfs := storage.ContainerRootfsPath(containerID)
-	mounts, err := openMounts(cfg.Mounts)
+	mounts, err := container.OpenMounts(cfg.Mounts)
 	Fatal(err)
-	defer closeMounts(mounts)
+	defer container.CloseMounts(mounts)
 
 	hostname := container.ClampHostname(cfg.Name)
 	Fatal(syscall.Sethostname([]byte(hostname)))
