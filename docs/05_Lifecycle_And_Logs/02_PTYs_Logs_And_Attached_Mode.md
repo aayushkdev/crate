@@ -4,6 +4,22 @@ Crate has two launch styles: attached and detached.
 
 Attached containers need terminal behavior. Detached containers need durable logs.
 
+## What A PTY Is
+
+PTY stands for pseudo terminal.
+
+A terminal program usually expects to talk to a terminal device, not just a plain file or pipe. A PTY gives us a pair of connected devices:
+
+```text
+terminal side used by Crate <-> terminal side seen by the child process
+```
+
+Crate writes your keyboard input into one side. The container process reads it from the other side. The container writes output to its side, and Crate relays that output back to your real terminal.
+
+This is why a shell inside an attached container can do line editing, prompt drawing and terminal control.
+
+Without a PTY, many programs still run, but they know they are not attached to a real terminal. They may disable colors, line editing, job control or full-screen behavior.
+
 ## Attached Mode
 
 In attached mode, Crate starts the child behind a pseudo terminal. This is implemented in `internal/runtime/pty.go`.
