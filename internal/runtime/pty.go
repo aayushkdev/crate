@@ -26,7 +26,7 @@ func startAttached(cmd *exec.Cmd) (*os.File, error) {
 	return ptmx, nil
 }
 
-func relayAttached(ptmx *os.File, logFile *os.File) error {
+func relayAttached(ptmx *os.File, out io.Writer) error {
 	defer ptmx.Close()
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
@@ -56,7 +56,7 @@ func relayAttached(ptmx *os.File, logFile *os.File) error {
 	}
 
 	go io.Copy(ptmx, os.Stdin)
-	_, err := io.Copy(io.MultiWriter(os.Stdout, logFile), ptmx)
+	_, err := io.Copy(out, ptmx)
 	if err != nil && err != io.EOF && !errors.Is(err, syscall.EIO) {
 		return err
 	}

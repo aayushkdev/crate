@@ -46,6 +46,12 @@ Start an existing container:
 crate start <container> [command] [args...]
 ```
 
+Run a command in a running container:
+
+```sh
+crate exec <container> <command> [args...]
+```
+
 List containers:
 
 ```sh
@@ -94,4 +100,3 @@ For `run`:
 * `-d, --detach`
 * `--rm`
 * `-w, --workdir <path>`
-

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -41,8 +42,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 	defer logFile.Close()
 
-	args := append([]string{"init", containerID}, command...)
-	cmd := exec.Command("/proc/self/exe", args...)
+	cmd := selfCommand("init", containerID, command)
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.Env = append(os.Environ(), cratenet.ModeEnv(netCfg.Mode))
 
@@ -144,7 +144,7 @@ func launchContainer(containerID string, command []string, cfg *container.Config
 	}
 
 	if attach {
-		if err := relayAttached(ptmx, logFile); err != nil {
+		if err := relayAttached(ptmx, io.MultiWriter(os.Stdout, logFile)); err != nil {
 			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
 			_ = cmd.Process.Kill()
 			waitErr := cmd.Wait()

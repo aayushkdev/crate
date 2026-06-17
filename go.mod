@@ -4,7 +4,7 @@ go 1.25.5
 
 require github.com/spf13/cobra v1.10.2
 
-require golang.org/x/sys v0.38.0 // indirect
+require golang.org/x/sys v0.38.0
 
 require (
 	github.com/creack/pty v1.1.24

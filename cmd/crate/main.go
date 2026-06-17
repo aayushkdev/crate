@@ -9,12 +9,21 @@ import (
 )
 
 func main() {
-	if len(os.Args) >= 3 && os.Args[1] == "init" {
+	if len(os.Args) >= 3 {
 		containerID := os.Args[2]
 		command := os.Args[3:]
 
-		runtime.InitContainer(containerID, command)
-		return
+		switch os.Args[1] {
+		case "init":
+			runtime.InitContainer(containerID, command)
+			return
+		case "exec-init":
+			runtime.ExecInit(containerID, command)
+			return
+		case "exec-child":
+			runtime.ExecChild(containerID, command)
+			return
+		}
 	}
 
 	if err := Execute(); err != nil {

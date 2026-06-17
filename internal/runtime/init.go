@@ -62,16 +62,20 @@ func InitContainer(containerID string, command []string) {
 }
 
 func applyWorkingDir(workingDir string) {
+	Fatal(chdirOrRoot(workingDir))
+}
+
+func chdirOrRoot(workingDir string) error {
 	if workingDir == "" {
-		return
+		return nil
 	}
 	if err := os.Chdir(workingDir); err == nil {
-		return
+		return nil
 	} else {
 		fmt.Fprintf(os.Stderr, "crate: warning: working directory %q is unavailable: %v; using /\n", workingDir, err)
 	}
 
-	Fatal(os.Chdir("/"))
+	return os.Chdir("/")
 }
 
 func reexecMappedInit(containerID string, command []string) error {

@@ -33,6 +33,7 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 | `crate run [--name] [--user] [--rm] [-v] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
 | `crate create [--name] [--user] [-v] [-n] [-p] <image>` | Create a container (without starting) |
 | `crate start <container> [cmd]` | Start an existing container |
+| `crate exec <container> <cmd>` | Run a command in a running container |
 | `crate ps [-a]` | List running containers (use `-a` for all) |
 | `crate stop <container>...` | Stop running containers |
 | `crate rm <container>...` | Remove stopped containers |
@@ -52,6 +53,7 @@ crate pull nginx
 crate run --name my-nginx -d -n private -p 8080:80 nginx
 crate ps
 crate logs my-nginx
+crate exec my-nginx sh
 crate stop my-nginx
 crate rm my-nginx
 ```
