@@ -49,9 +49,10 @@ crate start <container> [command] [args...]
 Run a command in a running container:
 
 ```sh
-crate exec <container> <command> [args...]
+crate exec <container> [command] [args...]
 ```
 
+Defaults to `sh` when no command is provided.
 Requires `nsenter` from util-linux on the host.
 
 List containers:

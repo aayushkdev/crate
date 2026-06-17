@@ -7,11 +7,16 @@ import (
 )
 
 var execCmd = &cobra.Command{
-	Use:   "exec CONTAINER COMMAND [ARG...]",
+	Use:   "exec CONTAINER [COMMAND] [ARG...]",
 	Short: "Run a command in a running container",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runtime.Exec(args[0], args[1:])
+		command := args[1:]
+		if len(command) == 0 {
+			command = []string{"sh"}
+		}
+
+		return runtime.Exec(args[0], command)
 	},
 }
 

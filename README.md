@@ -34,7 +34,7 @@ go install github.com/aayushkdev/crate/cmd/crate@latest
 | `crate run [--name] [--user] [--rm] [-v] [-n] [-p] [-d] <image> [cmd]` | Create and start a container |
 | `crate create [--name] [--user] [-v] [-n] [-p] <image>` | Create a container (without starting) |
 | `crate start <container> [cmd]` | Start an existing container |
-| `crate exec <container> <cmd>` | Run a command in a running container |
+| `crate exec <container> [cmd]` | Run a command in a running container (defaults to `sh`) |
 | `crate ps [-a]` | List running containers (use `-a` for all) |
 | `crate stop <container>...` | Stop running containers |
 | `crate rm <container>...` | Remove stopped containers |

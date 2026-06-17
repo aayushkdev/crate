@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,7 @@ import (
 )
 
 const (
-	execConfigEnv  = "CRATE_EXEC_CONFIG"
+	execConfigFD   = 3
 	execRootPIDEnv = "CRATE_EXEC_ROOT_PID"
 )
 
@@ -94,10 +93,11 @@ func runNsenterExec(state *container.State, cfg *container.Config, command []str
 		return fmt.Errorf("resolve self executable: %w", err)
 	}
 
-	execCfg, err := marshalExecConfig(cfg)
+	execCfg, err := createExecConfigFile(cfg)
 	if err != nil {
 		return err
 	}
+	defer execCfg.Close()
 
 	args := []string{
 		"--target", strconv.Itoa(state.PID),
@@ -127,9 +127,9 @@ func runNsenterExec(state *container.State, cfg *container.Config, command []str
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(
 		os.Environ(),
-		execConfigEnv+"="+base64.StdEncoding.EncodeToString(execCfg),
 		execRootPIDEnv+"="+strconv.Itoa(state.PID),
 	)
+	cmd.ExtraFiles = []*os.File{execCfg}
 
 	return cmd.Run()
 }
@@ -196,6 +196,33 @@ func enterExecRoot(root *os.File) error {
 	return nil
 }
 
+func createExecConfigFile(cfg *container.Config) (*os.File, error) {
+	f, err := os.CreateTemp("", "crate-exec-config-*")
+	if err != nil {
+		return nil, fmt.Errorf("create exec config: %w", err)
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("unlink exec config: %w", err)
+	}
+
+	execCfg, err := marshalExecConfig(cfg)
+	if err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+	if _, err := f.Write(execCfg); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("write exec config: %w", err)
+	}
+	if _, err := f.Seek(0, 0); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("rewind exec config: %w", err)
+	}
+
+	return f, nil
+}
+
 func marshalExecConfig(cfg *container.Config) ([]byte, error) {
 	execCfg := execChildConfig{
 		Env:        cfg.Env,
@@ -211,17 +238,13 @@ func marshalExecConfig(cfg *container.Config) ([]byte, error) {
 }
 
 func readExecChildConfig() (*execChildConfig, error) {
-	encoded := os.Getenv(execConfigEnv)
-	if encoded == "" {
-		return nil, fmt.Errorf("%s is not set", execConfigEnv)
+	f := os.NewFile(uintptr(execConfigFD), "exec-config")
+	if f == nil {
+		return nil, fmt.Errorf("exec config fd is unavailable")
 	}
-	data, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return nil, fmt.Errorf("decode exec config: %w", err)
-	}
-
+	defer f.Close()
 	var cfg execChildConfig
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("read exec config: %w", err)
 	}
 
