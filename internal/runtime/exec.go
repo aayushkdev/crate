@@ -7,18 +7,17 @@ import (
 	"fmt"
 	"os"
 	osexec "os/exec"
-	goruntime "runtime"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
 	"github.com/aayushkdev/crate/internal/container"
 	cratenet "github.com/aayushkdev/crate/internal/net"
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 const (
-	execRootFD     = 3
-	execConfigFD   = 4
 	execConfigEnv  = "CRATE_EXEC_CONFIG"
 	execRootPIDEnv = "CRATE_EXEC_ROOT_PID"
 )
@@ -40,20 +39,27 @@ func Exec(containerID string, command []string) error {
 	}
 
 	cmd := selfCommand("exec-init", state.ID, command)
-	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	if useExecPTY(command) {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		ptmx, err := startAttached(cmd)
+		if err != nil {
+			return err
+		}
+		if err := relayAttached(ptmx, os.Stdout); err != nil {
+			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
+			_ = cmd.Process.Kill()
+			waitErr := cmd.Wait()
+			return errors.Join(err, waitErr)
+		}
 
-	ptmx, err := startAttached(cmd)
-	if err != nil {
-		return err
-	}
-	if err := relayAttached(ptmx, os.Stdout); err != nil {
-		_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-		_ = cmd.Process.Kill()
-		waitErr := cmd.Wait()
-		return errors.Join(err, waitErr)
+		return cmd.Wait()
 	}
 
-	return cmd.Wait()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func ExecInit(containerID string, command []string) {
@@ -74,48 +80,13 @@ func runExecInit(containerID string, command []string) error {
 		return err
 	}
 
-	if cfg.Rootless {
-		return runRootlessExecInit(state, cfg, command)
-	}
-
-	root, err := os.Open(fmt.Sprintf("/proc/%d/root", state.PID))
-	if err != nil {
-		return fmt.Errorf("open container root: %w", err)
-	}
-	defer root.Close()
-
-	execCfg, err := createExecConfigFile(cfg)
-	if err != nil {
-		return err
-	}
-	defer execCfg.Close()
-
-	ns, err := openContainerNamespaces(state.PID, cfg.Rootless, shouldJoinNetNS(state, cfg))
-	if err != nil {
-		return err
-	}
-	defer ns.Close()
-
-	goruntime.LockOSThread()
-	defer goruntime.UnlockOSThread()
-
-	if err := joinContainerNamespaces(ns); err != nil {
-		return err
-	}
-
-	cmd := selfCommand("exec-child", state.ID, command)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.ExtraFiles = []*os.File{root, execCfg}
-
-	return cmd.Run()
+	return runNsenterExec(state, cfg, command)
 }
 
-func runRootlessExecInit(state *container.State, cfg *container.Config, command []string) error {
+func runNsenterExec(state *container.State, cfg *container.Config, command []string) error {
 	nsenterPath, err := osexec.LookPath("nsenter")
 	if err != nil {
-		return fmt.Errorf("rootless exec requires nsenter: %w", err)
+		return fmt.Errorf("exec requires nsenter: %w", err)
 	}
 
 	exePath, err := os.Executable()
@@ -130,9 +101,11 @@ func runRootlessExecInit(state *container.State, cfg *container.Config, command 
 
 	args := []string{
 		"--target", strconv.Itoa(state.PID),
-		"--user",
 		"--mount",
 		"--uts",
+	}
+	if cfg.Rootless {
+		args = append(args, "--user")
 	}
 	if shouldJoinNetNS(state, cfg) {
 		args = append(args, "--net")
@@ -171,14 +144,8 @@ func runExecChild(_ string, command []string) error {
 		return err
 	}
 
-	if rootPID := os.Getenv(execRootPIDEnv); rootPID != "" {
-		if err := enterExecRootPath(fmt.Sprintf("/proc/%s/root", rootPID)); err != nil {
-			return err
-		}
-	} else {
-		if err := enterExecRootFD(); err != nil {
-			return err
-		}
+	if err := enterExecRootFromEnv(); err != nil {
+		return err
 	}
 	if err := chdirOrRoot(cfg.WorkingDir); err != nil {
 		return err
@@ -195,17 +162,17 @@ func runExecChild(_ string, command []string) error {
 	return syscall.Exec(execPath, command, cfg.Env)
 }
 
-func enterExecRootFD() error {
-	root := os.NewFile(uintptr(execRootFD), "container-root")
-	if root == nil {
-		return fmt.Errorf("container root fd is unavailable")
+func enterExecRootFromEnv() error {
+	rawPID := os.Getenv(execRootPIDEnv)
+	if rawPID == "" {
+		return fmt.Errorf("%s is not set", execRootPIDEnv)
 	}
-	defer root.Close()
+	pid, err := strconv.Atoi(rawPID)
+	if err != nil || pid <= 0 {
+		return fmt.Errorf("invalid %s %q", execRootPIDEnv, rawPID)
+	}
 
-	return enterExecRoot(root)
-}
-
-func enterExecRootPath(path string) error {
+	path := fmt.Sprintf("/proc/%d/root", pid)
 	root, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("open container root: %w", err)
@@ -229,33 +196,6 @@ func enterExecRoot(root *os.File) error {
 	return nil
 }
 
-func createExecConfigFile(cfg *container.Config) (*os.File, error) {
-	f, err := os.CreateTemp("", "crate-exec-config-*")
-	if err != nil {
-		return nil, fmt.Errorf("create exec config: %w", err)
-	}
-	if err := os.Remove(f.Name()); err != nil {
-		_ = f.Close()
-		return nil, fmt.Errorf("unlink exec config: %w", err)
-	}
-
-	execCfg, err := marshalExecConfig(cfg)
-	if err != nil {
-		_ = f.Close()
-		return nil, err
-	}
-	if _, err := f.Write(execCfg); err != nil {
-		_ = f.Close()
-		return nil, fmt.Errorf("write exec config: %w", err)
-	}
-	if _, err := f.Seek(0, 0); err != nil {
-		_ = f.Close()
-		return nil, fmt.Errorf("rewind exec config: %w", err)
-	}
-
-	return f, nil
-}
-
 func marshalExecConfig(cfg *container.Config) ([]byte, error) {
 	execCfg := execChildConfig{
 		Env:        cfg.Env,
@@ -271,32 +211,45 @@ func marshalExecConfig(cfg *container.Config) ([]byte, error) {
 }
 
 func readExecChildConfig() (*execChildConfig, error) {
-	if encoded := os.Getenv(execConfigEnv); encoded != "" {
-		data, err := base64.StdEncoding.DecodeString(encoded)
-		if err != nil {
-			return nil, fmt.Errorf("decode exec config: %w", err)
-		}
-
-		var cfg execChildConfig
-		if err := json.Unmarshal(data, &cfg); err != nil {
-			return nil, fmt.Errorf("read exec config: %w", err)
-		}
-
-		return &cfg, nil
+	encoded := os.Getenv(execConfigEnv)
+	if encoded == "" {
+		return nil, fmt.Errorf("%s is not set", execConfigEnv)
 	}
-
-	f := os.NewFile(uintptr(execConfigFD), "exec-config")
-	if f == nil {
-		return nil, fmt.Errorf("exec config fd is unavailable")
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, fmt.Errorf("decode exec config: %w", err)
 	}
-	defer f.Close()
 
 	var cfg execChildConfig
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("read exec config: %w", err)
 	}
 
 	return &cfg, nil
+}
+
+func useExecPTY(command []string) bool {
+	if !isTerminal(os.Stdin) || !isTerminal(os.Stdout) {
+		return false
+	}
+	if len(command) != 1 {
+		return false
+	}
+
+	switch filepath.Base(command[0]) {
+	case "sh", "ash", "bash", "dash", "zsh", "fish":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTerminal(f *os.File) bool {
+	if f == nil {
+		return false
+	}
+
+	return term.IsTerminal(int(f.Fd()))
 }
 
 func readRunningContainer(containerID string) (*container.State, *container.Config, error) {

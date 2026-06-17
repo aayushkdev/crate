@@ -52,6 +52,8 @@ Run a command in a running container:
 crate exec <container> <command> [args...]
 ```
 
+Requires `nsenter` from util-linux on the host.
+
 List containers:
 
 ```sh

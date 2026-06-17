@@ -8,6 +8,7 @@ It launches containers directly, persists runtime state on disk instead of relyi
 ## Getting started
 
 Requires Go 1.20+.
+Runtime command execution with `crate exec` requires `nsenter` from util-linux.
 
 ```bash
 git clone https://github.com/aayushkdev/crate.git
