@@ -26,6 +26,25 @@ func startAttached(cmd *exec.Cmd) (*os.File, error) {
 	return ptmx, nil
 }
 
+func startAttachedNoCTTY(cmd *exec.Cmd) (*os.File, error) {
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer tty.Close()
+
+	cmd.Stdin = tty
+	cmd.Stdout = tty
+	cmd.Stderr = tty
+
+	if err := cmd.Start(); err != nil {
+		_ = ptmx.Close()
+		return nil, err
+	}
+
+	return ptmx, nil
+}
+
 func relayAttached(ptmx *os.File, out io.Writer) error {
 	defer ptmx.Close()
 

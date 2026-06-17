@@ -25,6 +25,7 @@ type execChildConfig struct {
 	Env        []string `json:"env"`
 	User       string   `json:"user,omitempty"`
 	WorkingDir string   `json:"working_dir,omitempty"`
+	TTY        bool     `json:"tty,omitempty"`
 }
 
 func Exec(containerID string, command []string) error {
@@ -39,16 +40,15 @@ func Exec(containerID string, command []string) error {
 
 	cmd := selfCommand("exec-init", state.ID, command)
 	if useExecPTY(command) {
-		cmd.SysProcAttr = &syscall.SysProcAttr{}
-		ptmx, err := startAttached(cmd)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		ptmx, err := startAttachedNoCTTY(cmd)
 		if err != nil {
 			return err
 		}
 		if err := relayAttached(ptmx, os.Stdout); err != nil {
-			_ = killProcessGroup(cmd.Process.Pid, syscall.SIGKILL)
-			_ = cmd.Process.Kill()
+			cleanupErr := killProcessTree(cmd.Process.Pid, syscall.SIGKILL)
 			waitErr := cmd.Wait()
-			return errors.Join(err, waitErr)
+			return errors.Join(err, cleanupErr, waitErr)
 		}
 
 		return cmd.Wait()
@@ -79,10 +79,10 @@ func runExecInit(containerID string, command []string) error {
 		return err
 	}
 
-	return runNsenterExec(state, cfg, command)
+	return runNsenterExec(state, cfg, command, useExecPTY(command))
 }
 
-func runNsenterExec(state *container.State, cfg *container.Config, command []string) error {
+func runNsenterExec(state *container.State, cfg *container.Config, command []string, tty bool) error {
 	nsenterPath, err := osexec.LookPath("nsenter")
 	if err != nil {
 		return fmt.Errorf("exec requires nsenter: %w", err)
@@ -93,7 +93,7 @@ func runNsenterExec(state *container.State, cfg *container.Config, command []str
 		return fmt.Errorf("resolve self executable: %w", err)
 	}
 
-	execCfg, err := createExecConfigFile(cfg)
+	execCfg, err := createExecConfigFile(cfg, tty)
 	if err != nil {
 		return err
 	}
@@ -110,15 +110,8 @@ func runNsenterExec(state *container.State, cfg *container.Config, command []str
 	if shouldJoinNetNS(state, cfg) {
 		args = append(args, "--net")
 	}
-	args = append(args,
-		"--pid",
-		"--preserve-credentials",
-		"--keep-caps",
-		"--",
-		exePath,
-		"exec-child",
-		state.ID,
-	)
+	args = append(args, "--pid")
+	args = append(args, "--preserve-credentials", "--keep-caps", "--", exePath, "exec-child", state.ID)
 	args = append(args, command...)
 
 	cmd := osexec.Command(nsenterPath, args...)
@@ -150,6 +143,14 @@ func runExecChild(_ string, command []string) error {
 	if err := chdirOrRoot(cfg.WorkingDir); err != nil {
 		return err
 	}
+	if cfg.TTY {
+		if err := claimExecTTY(); err != nil {
+			return err
+		}
+		if err := ensureExecDevTTY(); err != nil {
+			return err
+		}
+	}
 	if err := container.ApplyUser(cfg.User); err != nil {
 		return err
 	}
@@ -160,6 +161,34 @@ func runExecChild(_ string, command []string) error {
 	}
 
 	return syscall.Exec(execPath, command, cfg.Env)
+}
+
+func claimExecTTY() error {
+	if !isTerminal(os.Stdin) {
+		return fmt.Errorf("exec tty requested without terminal stdin")
+	}
+	if _, err := unix.Setsid(); err != nil {
+		return fmt.Errorf("create exec tty session: %w", err)
+	}
+	if err := unix.IoctlSetInt(int(os.Stdin.Fd()), unix.TIOCSCTTY, 0); err != nil {
+		return fmt.Errorf("set exec controlling tty: %w", err)
+	}
+
+	return nil
+}
+
+func ensureExecDevTTY() error {
+	if _, err := os.Lstat("/dev/tty"); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	if err := os.Symlink("/proc/self/fd/0", "/dev/tty"); err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	return nil
 }
 
 func enterExecRootFromEnv() error {
@@ -196,7 +225,7 @@ func enterExecRoot(root *os.File) error {
 	return nil
 }
 
-func createExecConfigFile(cfg *container.Config) (*os.File, error) {
+func createExecConfigFile(cfg *container.Config, tty bool) (*os.File, error) {
 	f, err := os.CreateTemp("", "crate-exec-config-*")
 	if err != nil {
 		return nil, fmt.Errorf("create exec config: %w", err)
@@ -206,7 +235,7 @@ func createExecConfigFile(cfg *container.Config) (*os.File, error) {
 		return nil, fmt.Errorf("unlink exec config: %w", err)
 	}
 
-	execCfg, err := marshalExecConfig(cfg)
+	execCfg, err := marshalExecConfig(cfg, tty)
 	if err != nil {
 		_ = f.Close()
 		return nil, err
@@ -223,11 +252,12 @@ func createExecConfigFile(cfg *container.Config) (*os.File, error) {
 	return f, nil
 }
 
-func marshalExecConfig(cfg *container.Config) ([]byte, error) {
+func marshalExecConfig(cfg *container.Config, tty bool) ([]byte, error) {
 	execCfg := execChildConfig{
 		Env:        cfg.Env,
 		User:       cfg.User,
 		WorkingDir: cfg.WorkingDir,
+		TTY:        tty,
 	}
 	data, err := json.Marshal(execCfg)
 	if err != nil {
